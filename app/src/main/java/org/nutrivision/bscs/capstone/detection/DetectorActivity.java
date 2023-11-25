@@ -1,19 +1,3 @@
-/*
- * Copyright 2019 The TensorFlow Authors. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.nutrivision.bscs.capstone.detection;
 
 import android.graphics.Bitmap;
@@ -32,6 +16,9 @@ import android.util.Size;
 import android.util.TypedValue;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.nutrivision.bscs.capstone.detection.env.BorderedText;
 import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
@@ -39,6 +26,7 @@ import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
 import org.nutrivision.bscs.capstone.detection.R;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -81,6 +69,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private MultiBoxTracker tracker;
 
     private BorderedText borderedText;
+    private RecyclerView detectedObjectsRecyclerView;
+    private DetectedObjectsAdapter detectedObjectsAdapter;
 
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -141,6 +131,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 });
 
         tracker.setFrameConfiguration(previewWidth, previewHeight, sensorOrientation);
+        // Initialize RecyclerView and its adapter
+        detectedObjectsRecyclerView = findViewById(R.id.detectedObjectsRecyclerView);
+        detectedObjectsAdapter = new DetectedObjectsAdapter();
+        detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
     }
 
     protected void updateActiveModel() {
@@ -293,6 +288,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                         showInference(lastProcessingTimeMs + "ms");
                                     }
                                 });
+                        // Update RecyclerView with detected objects
+                        runOnUiThread(() -> detectedObjectsAdapter.updateData(mappedRecognitions));
+                        Log.d("DetectorActivity", "data size: " + mappedRecognitions.size());
                     }
                 });
     }
