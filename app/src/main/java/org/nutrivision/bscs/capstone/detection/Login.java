@@ -5,6 +5,7 @@ import static android.widget.Toast.LENGTH_SHORT;
 import static org.nutrivision.bscs.capstone.detection.API.*;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -49,6 +51,7 @@ public class Login extends Activity {
     GoogleSignInClient gsc;
     ImageView googleBtn;
     Button login,sendEmail;
+    ImageView arrowBack;
     TextView forgotPass, register,btnSignUp;
     TextInputEditText editTextUsername,editTextPassword;
     TextInputLayout username,password;
@@ -68,6 +71,7 @@ public class Login extends Activity {
             goToLandingPage();
         }
         googleBtn = findViewById(R.id.googleBtn);
+        arrowBack = findViewById(R.id.btnBack);
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         editTextUsername = findViewById(R.id.emailEditText);
         editTextPassword = findViewById(R.id.passwordEditText);
@@ -270,5 +274,13 @@ public class Login extends Activity {
             }
         });
         alertDialog.show();
+    }
+    public void callLoginScreen(View view){
+        Intent intent = new Intent(Login.this, Welcome.class);
+        Pair[] pairs = new Pair[1];
+        pairs[0] = new Pair<View,String>(findViewById(R.id.btnBack),"login_transition");
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Login.this,pairs);
+        startActivity(intent,options.toBundle());
+        finish();
     }
 }

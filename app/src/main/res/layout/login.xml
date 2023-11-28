@@ -21,7 +21,8 @@
             android:id="@+id/btnBack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/arrow_back"/>
+            android:src="@drawable/arrow_back"
+            android:onClick="callLoginScreen"/>
 
         <TextView
             android:layout_width="wrap_content"
@@ -110,9 +111,11 @@
                     android:layout_height="wrap_content"
                     android:text="@string/forgot_password"
                     android:background="#00000000"
+                    android:textAllCaps="false"
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentRight="true"
-                    android:textColor="@color/black"/>
+                    android:layout_marginRight="10dp"
+                    android:textColor="@color/tfe_color_primary_dark"/>
 
             </RelativeLayout>
 
@@ -123,7 +126,8 @@
                 android:textColor="@color/white"
                 android:text="@string/login"
                 android:background="@color/tfe_color_primary_dark"
-                android:layout_marginTop="20dp" />
+                android:layout_marginTop="20dp"
+                />
 
             <Button
                 android:id="@+id/registerTextView"
