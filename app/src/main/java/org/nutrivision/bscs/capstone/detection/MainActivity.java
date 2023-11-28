@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
         selectButton = findViewById(R.id.storageBtn);
         realTimeButton = findViewById(R.id.realTimeBtn);
         detectButton = findViewById(R.id.detectButton);
+        logoutButton = findViewById(R.id.signOutBtn);
         imageView = findViewById(R.id.imgView);
 
         realTimeButton.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, DetectorActivity.class)));
@@ -92,6 +93,12 @@ public class MainActivity extends AppCompatActivity {
                 });
             }).start();
 
+        });
+        logoutButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                logout();
+            }
         });
         this.sourceBitmap = Utils.getBitmapFromAsset(MainActivity.this, "sample.jpg");
 
@@ -148,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap sourceBitmap;
     private Bitmap cropBitmap;
 
-    private Button realTimeButton, detectButton,selectButton;
+    private Button realTimeButton, detectButton,selectButton, logoutButton;
     private ImageView imageView;
     // Run object detection method
     private void runObjectDetection(Bitmap bitmap) {

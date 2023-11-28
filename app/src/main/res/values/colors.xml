@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="tfe_color_primary">#4285F4</color>
-    <color name="tfe_color_primary_dark">#0d47a1</color>
+    <color name="tfe_color_primary_dark">#000c79</color>
     <color name="tfe_color_accent">#425066</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>

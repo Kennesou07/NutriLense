@@ -36,6 +36,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,6 +51,7 @@ public class Login extends Activity {
     Button login,sendEmail;
     TextView forgotPass, register,btnSignUp;
     TextInputEditText editTextUsername,editTextPassword;
+    TextInputLayout username,password;
     EditText editTextEmail;
     ProgressDialog progressDialog;
     InputMethodManager imm;
@@ -69,6 +71,8 @@ public class Login extends Activity {
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         editTextUsername = findViewById(R.id.emailEditText);
         editTextPassword = findViewById(R.id.passwordEditText);
+        username = findViewById(R.id.textInputLayoutEmail);
+        password = findViewById(R.id.textInputLayoutPassword);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Logging in");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -80,10 +84,12 @@ public class Login extends Activity {
                 String username = editTextUsername.getText().toString().trim();
                 String password = editTextPassword.getText().toString().trim();
                 if(username.isEmpty()){
+                    editTextUsername.setError("Field cannot be empty");
                     editTextUsername.requestFocus();
                     imm.showSoftInput(editTextUsername,InputMethodManager.SHOW_IMPLICIT);
                 }
                 else if(password.isEmpty()){
+                    editTextPassword.setError("Field cannot be empty");
                     editTextPassword.requestFocus();
                     imm.showSoftInput(editTextPassword,InputMethodManager.SHOW_IMPLICIT);
                 }

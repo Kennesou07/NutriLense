@@ -1,4 +1,48 @@
 <resources>
     <string name="tfe_od_app_name" translation_description="Object Detection [CHAR_LIMIT=40]">Nutrivision</string>
     <string name="tfe_od_camera_error" translation_description="Error regarding camera support[CHAR_LIMIT=40]">This device doesn\'t support Camera2 API.</string>
+    <string name="slogan_name">Your Intelligent Food Companion</string>
+    <string name="tagline">"Your Journey to Nutritional Brilliance Begins Here"</string>
+    <string name="powered_by">Powered By Nutrivision.</string>
+
+    <!--Titles-->
+    <string name="first_slide">See Your Food, Know Your Health</string>
+    <string name="second_slide">Eating Smart Made Simple</string>
+    <string name="third_slide">Personalized Nutrition Guidance</string>
+    <string name="fourth_slide">Empowering Your Wellness Journey</string>
+
+    <!--Descriptions-->
+    <string name="first_slide_desc">See food in real-time and let Nutrivision reveals the nutritional lowdown instantly. See your food, know your health—it\'s that easy!</string>
+    <string name="second_slide_desc">Nutrivision makes smart eating a snap! Choose a pic, get the facts. Keep it simple, eat smart with Nutrivision.</string>
+    <string name="third_slide_desc">Tailored tips for you! Nutrivision gives personalized nutrition advice based on your health needs. Your guide to eating well, just the way you like it.</string>
+    <string name="fourth_slide_desc">More than an app—it\'s your health ally. Nutrivision empowers you with real-time info and personalized tips. Take charge of your wellness journey with Nutrivision.</string>
+
+    <!--Buttons-->
+    <string name="skip_btn">Skip</string>
+    <string name="next_btn">Next</string>
+    <string name="lets_get_started">Let\'s Get Started! </string>
+
+    <!--General Menu Names-->
+    <string name="home">HOME</string>
+    <string name="search">SEARCH</string>
+    <string name="all_categories">ALL CATEGORIES</string>
+    <string name="add_products">ALL PRODUCTS</string>
+    <string name="login">LOGIN</string>
+    <string name="profile">PROFILE</string>
+    <string name="logout">LOGOUT</string>
+    <string name="share">Share</string>
+    <string name="rate_us">Rate Us</string>
+
+    <!--All Categories Menu names-->
+    <string name="expand_all">Expand All</string>
+    <string name="all_items">All Items</string>
+
+    <!--Login names-->
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="remember_me">Remember me</string>
+    <string name="forgot_password">Forgot Password</string>
+    <string name="create_account">Create an Account</string>
+    <string name="sign_in_with">or Sign in with:</string>
+
 </resources>

@@ -19,14 +19,13 @@ import android.widget.Toast;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.nutrivision.bscs.capstone.detection.adapter.DetectedObjectsAdapter;
 import org.nutrivision.bscs.capstone.detection.env.BorderedText;
 import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
 import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
-import org.nutrivision.bscs.capstone.detection.R;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 

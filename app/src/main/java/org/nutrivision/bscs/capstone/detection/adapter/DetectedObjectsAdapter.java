@@ -1,4 +1,4 @@
-package org.nutrivision.bscs.capstone.detection;
+package org.nutrivision.bscs.capstone.detection.adapter;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.nutrivision.bscs.capstone.detection.R;
 import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
 
 import java.util.ArrayList;
