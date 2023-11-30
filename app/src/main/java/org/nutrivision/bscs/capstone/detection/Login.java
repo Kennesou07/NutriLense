@@ -11,15 +11,23 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Pair;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,15 +57,16 @@ import java.util.Map;
 public class Login extends Activity {
     GoogleSignInOptions gso;
     GoogleSignInClient gsc;
-    ImageView googleBtn;
-    Button login,sendEmail;
+    ImageView googleBtn,closeBtn;
+    Button login,sendEmail,backToLoginBtn;
     ImageView arrowBack;
-    TextView forgotPass, register,btnSignUp;
+    TextView forgotPass, register,linkSent;
     TextInputEditText editTextUsername,editTextPassword;
-    TextInputLayout username,password;
+    TextInputLayout username,password, emailLayout;
     EditText editTextEmail;
     ProgressDialog progressDialog;
     InputMethodManager imm;
+    int GREEN = Color.rgb(0, 210, 0);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -164,6 +173,7 @@ public class Login extends Activity {
             public void onClick(View view) {
                 Intent intent = new Intent(Login.this,SignUp.class);
                 startActivity(intent);
+                finish();
             }
         });
         googleBtn.setOnClickListener(new View.OnClickListener() {
@@ -217,22 +227,81 @@ public class Login extends Activity {
         startActivity(intent);
         finish();
     }
+    private void showLinkSentDialog(String email){
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = inflater.inflate(R.layout.inflater_link_sent,null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        final AlertDialog successDialog = builder.create();
+        backToLoginBtn = dialogView.findViewById(R.id.btnBackToLogin);
+        linkSent = dialogView.findViewById(R.id.link_sent_desc);
+        linkSent.append(email);
+        Animation popAnim = AnimationUtils.loadAnimation(this,R.anim.pop_animation);
+        dialogView.setAnimation(popAnim);
 
+        backToLoginBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                successDialog.dismiss();
+            }
+        });
+        successDialog.show();
+    }
     private void showForgotPasswordDialog(){
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View dialogView = inflater.inflate(R.layout.forgotpassword,null);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(dialogView);
         final AlertDialog alertDialog = builder.create();
+        Animation popAnim = AnimationUtils.loadAnimation(this,R.anim.pop_animation);
+        dialogView.setAnimation(popAnim);
+        emailLayout = dialogView.findViewById(R.id.emailLayout);
         editTextEmail = dialogView.findViewById(R.id.edtTextEmail);
         sendEmail = dialogView.findViewById(R.id.btnSendEmail);
+        closeBtn = dialogView.findViewById(R.id.closedBtn);
+
+        editTextEmail.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                String email = editable.toString().trim();
+                if(!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
+                    emailLayout.setHelperText("Invalid email address!");
+                    emailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    emailLayout.setBoxStrokeColor(Color.RED);
+                    editTextEmail.requestFocus();
+                    imm.showSoftInput(editTextEmail,InputMethodManager.SHOW_IMPLICIT);
+                }
+                else{
+                    emailLayout.setHelperText(null);
+                    emailLayout.setBoxStrokeColor(GREEN);
+                }
+            }
+        });
+        closeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                alertDialog.dismiss();
+            }
+        });
 
         sendEmail.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String email = editTextEmail.getText().toString().trim();
-                if (email == null) {
-                    Toast.makeText(Login.this,"Email is null",LENGTH_SHORT).show();
+                if (email.isEmpty()) {
+                    emailLayout.setBoxStrokeColor(Color.RED);
+                    emailLayout.setHelperText("Cannot be empty!");
+                    emailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
                     editTextEmail.requestFocus();
                     imm.showSoftInput(editTextEmail,InputMethodManager.SHOW_IMPLICIT);
                 }
@@ -275,8 +344,9 @@ public class Login extends Activity {
                             DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
                     RequestQueue queue = Volley.newRequestQueue(Login.this);
                     queue.add(stringRequest);
+                    alertDialog.dismiss();
+                    showLinkSentDialog(email);
                 }
-                alertDialog.dismiss();
             }
         });
         alertDialog.show();

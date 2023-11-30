@@ -16,6 +16,9 @@
     <string name="second_slide_desc">Nutrivision makes smart eating a snap! Choose a pic, get the facts. Keep it simple, eat smart with Nutrivision.</string>
     <string name="third_slide_desc">Tailored tips for you! Nutrivision gives personalized nutrition advice based on your health needs. Your guide to eating well, just the way you like it.</string>
     <string name="fourth_slide_desc">More than an app—it\'s your health ally. Nutrivision empowers you with real-time info and personalized tips. Take charge of your wellness journey with Nutrivision.</string>
+    <string name="forget_password_details">Input your email for the password reset link to be sent promptly and securely to your registered email address.</string>
+    <string name="link_sent">Link Sent</string>
+    <string name="link_sent_desc">Password reset link has been successfully sent to </string>
 
     <!--Buttons-->
     <string name="skip_btn">Skip</string>

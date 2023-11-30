@@ -490,4 +490,14 @@ public class SignUp extends Activity {
         repassword = edtRePass.getText().toString().trim();
         return password.equals(repassword);
     }
+    @Override
+    public void onBackPressed() {
+        Intent parentIntent = getParentActivityIntent();
+        if (parentIntent != null) {
+            startActivity(parentIntent);
+            finish();
+        } else {
+            super.onBackPressed();
+        }
+    }
 }
