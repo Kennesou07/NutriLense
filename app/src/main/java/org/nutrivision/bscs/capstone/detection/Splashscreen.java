@@ -42,7 +42,7 @@ public class Splashscreen extends Activity {
         // Load the GIF into the ImageView using Glide
         Glide.with(this)
                 .asGif()
-                .load(R.drawable.nutrivision)
+                .load(R.drawable.nutrilense)
                 .into(splash);
 
         // Set a delay to redirect to the next activity

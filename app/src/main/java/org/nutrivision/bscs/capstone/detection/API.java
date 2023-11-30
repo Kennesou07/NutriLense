@@ -5,6 +5,7 @@ public class API {
     public static final String SERVER = "https://nutrivision.ucc-bscs.com/API/";
     public static final String SIGNUP_SITE = SERVER + "signup.php";
     public static final String USERNAME_SITE = SERVER + "username_validation.php";
+    public static final String EMAIL_SITE = SERVER + "email_validation.php";
     public static final String LOGIN_SITE = SERVER + "login.php";
     public static final String FORGOT_SITE = SERVER + "forgotpass.php";
 

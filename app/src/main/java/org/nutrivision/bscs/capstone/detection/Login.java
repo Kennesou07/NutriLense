@@ -187,6 +187,12 @@ public class Login extends Activity {
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            // Save session information
+            SharedPreferences preferences = getSharedPreferences("LogInSession", MODE_PRIVATE);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("isLoggedIn", true);
+            editor.apply();
+
             Intent intent = new Intent(Login.this,MainActivity.class);
             startActivity(intent);
             finish();

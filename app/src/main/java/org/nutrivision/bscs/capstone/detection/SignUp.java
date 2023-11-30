@@ -3,25 +3,33 @@ package org.nutrivision.bscs.capstone.detection;
 
 import static android.widget.Toast.LENGTH_LONG;
 
+import static org.nutrivision.bscs.capstone.detection.API.EMAIL_SITE;
 import static org.nutrivision.bscs.capstone.detection.API.SIGNUP_SITE;
 import static org.nutrivision.bscs.capstone.detection.API.USERNAME_SITE;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Pair;
+import android.util.Patterns;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,69 +44,69 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class SignUp extends Activity {
-    TextView passClassifier,rePassClassifier,usernameClassifier,emailClassifier;
-    TextInputEditText edtUsername, edtPassword, edtRePass,edtName,edtAge,edtEmail;
-    Spinner edtGender;
+    TextView titleText;
+    TextInputLayout edtUsernameLayout, edtPasswordLayout,edtRepassLayout,edtNameLayout,edtAgeLayout,edtEmailLayout,edtGenderLayout,edtPhoneLayout;
+    TextInputEditText edtUsername, edtPassword, edtRePass,edtName,edtAge,edtEmail,edtPhone;
     Button btnSignUp;
     ProgressDialog progressDialog;
     InputMethodManager imm;
-
-    public class CustomSpinnerAdapter extends ArrayAdapter<CharSequence> {
-        public CustomSpinnerAdapter(Context context, int resource, CharSequence[] objects) {
-            super(context, resource, objects);
-        }
-
-        @Override
-        public boolean isEnabled(int position) {
-            return position != 0; // Disable the first item in the Spinner
-        }
-
-        @Override
-        public View getDropDownView(int position, View convertView, ViewGroup parent) {
-            View view = super.getDropDownView(position, convertView, parent);
-            TextView tv = (TextView) view;
-            if (position == 0) {
-                tv.setTextColor(Color.GRAY); // Set the color of the first item to gray to indicate that it's disabled
-            } else {
-                tv.setTextColor(Color.BLACK);
-            }
-            return view;
-        }
-    }
+    ImageView backButton;
+    AutoCompleteTextView autoCompleteGender;
+    String gender;
+    int GREEN = Color.rgb(0, 210, 0);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.signup);
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+
+        //  EditText
         edtUsername = findViewById(R.id.editTextUsername);
         edtPassword = findViewById(R.id.editTextPassword);
         edtRePass = findViewById(R.id.editTextRePassword);
         edtName = findViewById(R.id.editTextName);
         edtAge = findViewById(R.id.editTextAge);
-        edtGender = findViewById(R.id.spinnerGender);
         edtEmail = findViewById(R.id.editTextEmail);
-        passClassifier = findViewById(R.id.passClassifier);
-        rePassClassifier = findViewById(R.id.rePassClassifier);
-        usernameClassifier = findViewById(R.id.usernameClassifier);
-        emailClassifier = findViewById(R.id.emailClassifier);
+        edtPhone = findViewById(R.id.editTextPhone);
+
+        //  Buttons
         btnSignUp = findViewById(R.id.SignUpBtn);
+        backButton = findViewById(R.id.btnSignUpBack);
+        titleText = findViewById(R.id.signUpTitle);
+
+        //  TextInputLayout
+        edtUsernameLayout = findViewById(R.id.textInputLayoutUsername);
+        edtNameLayout = findViewById(R.id.textInputLayoutName);
+        edtPasswordLayout = findViewById(R.id.textInputLayoutPassword);
+        edtRepassLayout = findViewById(R.id.textInputLayoutRePassword);
+        edtEmailLayout = findViewById(R.id.textInputLayoutEmail);
+        edtGenderLayout = findViewById(R.id.textInputLayoutGender);
+        edtAgeLayout = findViewById(R.id.textInputLayoutAge);
+        edtPhoneLayout = findViewById(R.id.textInputLayoutPhone);
+
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading...");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 
         // Spinner initialization
-        edtGender = findViewById(R.id.spinnerGender);
-        CharSequence[] items = getResources().getStringArray(R.array.genders);
-        CustomSpinnerAdapter adapter = new CustomSpinnerAdapter(this, android.R.layout.simple_spinner_item, items);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        edtGender.setAdapter(adapter);
-
+        String[] genderArray = new String[]{"Male","Female","Others"};
+        ArrayAdapter<String> genderAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, genderArray);
+        autoCompleteGender = findViewById(R.id.spinnerGender);
+        autoCompleteGender.setAdapter(genderAdapter);
+        autoCompleteGender.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                gender = adapterView.getItemAtPosition(i).toString().trim();
+            }
+        });
         edtPassword.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
@@ -136,15 +144,13 @@ public class SignUp extends Activity {
                             @Override
                             public void onResponse(String response) {
                                 if (response.trim().equals("Exist!")) {
-                                    // Registration successful
-                                    usernameClassifier.setVisibility(View.VISIBLE);
-                                    usernameClassifier.setText("Username already taken!");
-                                    usernameClassifier.setTextColor(Color.RED);
+                                    edtUsernameLayout.setHelperText("Username Exist");
+                                    edtUsernameLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                                    edtUsernameLayout.setBoxStrokeColor(Color.RED);
                                 } else {
-                                    // Registration failed
-                                    usernameClassifier.setVisibility(View.VISIBLE);
-                                    usernameClassifier.setText("Available");
-                                    usernameClassifier.setTextColor(Color.GREEN);
+                                    edtUsernameLayout.setHelperText("Valid Username");
+                                    edtUsernameLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
+                                    edtUsernameLayout.setBoxStrokeColor(GREEN);
                                 }
                             }
                         }, new Response.ErrorListener() {
@@ -171,27 +177,29 @@ public class SignUp extends Activity {
         edtPassword.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                // This method is called to notify you that characters within s are about to be replaced with new text with a length of before.
+                // Not used in this example
             }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                // This method is called to notify you that somewhere within s, the text has been changed.
+                // Check if the password is weak and update the helper text and box stroke color
+                String password = charSequence.toString().trim();
+                if (!isPasswordStrong(password)) {
+                    String missingRequirements = getMissingRequirements(password);
+                    edtPasswordLayout.setHelperText("Weak Password: " + missingRequirements);
+                    edtPasswordLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtPasswordLayout.setBoxStrokeColor(Color.RED);
+                } else {
+                    // Password is strong, clear the helper text and set box stroke color to green
+                    edtPasswordLayout.setHelperText("Strong Password");
+                    edtPasswordLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
+                    edtPasswordLayout.setBoxStrokeColor(GREEN);
+                }
             }
 
             @Override
             public void afterTextChanged(Editable editable) {
-                // This method is called to notify you that somewhere within editable, the text has been changed.
-                String password = editable.toString().trim();
-                if (!isPasswordStrong(password)) {
-                    passClassifier.setVisibility(View.VISIBLE);
-                    passClassifier.setText("Weak Password!");
-                    passClassifier.setTextColor(Color.RED);
-                } else {
-                    passClassifier.setVisibility(View.VISIBLE);
-                    passClassifier.setTextColor(Color.GREEN);
-                    passClassifier.setText("Strong Password!");
-                }
+                // Not used in this example
             }
         });
 
@@ -211,17 +219,73 @@ public class SignUp extends Activity {
                 String password = editable.toString().trim();
                 String repassword = editable.toString().trim();
                 if (!isPasswordMatch(password,repassword)) {
-                    rePassClassifier.setVisibility(View.VISIBLE);
-                    rePassClassifier.setText("Password Mismatch!");
-                    rePassClassifier.setTextColor(Color.RED);
+                    edtRepassLayout.setHelperText("Password Mismatched!");
+                    edtRepassLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
+                    edtRepassLayout.setBoxStrokeColor(Color.RED);
                 } else {
-                    rePassClassifier.setVisibility(View.VISIBLE);
-                    rePassClassifier.setTextColor(Color.GREEN);
-                    rePassClassifier.setText("Password Matched!");
+                    edtRepassLayout.setHelperText("Password Matched");
+                    edtRepassLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
+                    edtRepassLayout.setBoxStrokeColor(GREEN);
                 }
             }
         });
+        edtEmail.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                String email = editable.toString().trim();
+
+                if(!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
+                    edtEmailLayout.setHelperText("Invalid email address!");
+                    edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtEmailLayout.setBoxStrokeColor(Color.RED);
+                }
+                else{
+                    StringRequest stringRequest = new StringRequest(Request.Method.POST, EMAIL_SITE,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    if (response.trim().equals("Exist!")) {
+                                        edtEmailLayout.setHelperText("Email already exist!");
+                                        edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                                        edtEmailLayout.setBoxStrokeColor(Color.RED);
+                                    } else {
+                                        edtEmailLayout.setHelperText("Valid email");
+                                        edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
+                                        edtUsernameLayout.setBoxStrokeColor(GREEN);
+                                    }
+                                }
+                            }, new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+                            progressDialog.dismiss();
+                            message(error.getMessage());
+                        }
+                    }){
+                        @Override
+                        protected Map<String, String> getParams() throws AuthFailureError {
+                            Map<String,String> params = new HashMap<>();
+                            params.put("Email",email);
+                            return params;
+                        }
+                    };
+                    stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                            DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                            DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+                    RequestQueue queue = Volley.newRequestQueue(SignUp.this);
+                    queue.add(stringRequest);
+                }
+            }
+        });
         btnSignUp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -231,17 +295,65 @@ public class SignUp extends Activity {
                 final String repassword = edtRePass.getText().toString().trim();
                 final String name = edtName.getText().toString().trim();
                 final String age = edtAge.getText().toString().trim();
-                final String gender = edtGender.getSelectedItem().toString();
                 final String email = edtEmail.getText().toString().trim();
+                final String phone = edtPhone.getText().toString().trim();
 
-                if(username.isEmpty() || password.isEmpty() || repassword.isEmpty() || name.isEmpty() || age.isEmpty() || gender.isEmpty() || email.isEmpty()){
-                    message("Please input all fields...");
-                    progressDialog.dismiss();
+                if(username.isEmpty()){
+                    edtUsernameLayout.setHelperText("Required*");
+                    edtUsernameLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtUsernameLayout.setBoxStrokeColor(Color.RED);
+                    edtUsername.requestFocus();
+                    imm.showSoftInput(edtUsername,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(password.isEmpty()){
+                    edtPasswordLayout.setHelperText("Required*");
+                    edtPasswordLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtPasswordLayout.setBoxStrokeColor(Color.RED);
+                    edtPassword.requestFocus();
+                    imm.showSoftInput(edtPassword,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(repassword.isEmpty()){
+                    edtRepassLayout.setHelperText("Required*");
+                    edtRepassLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtRepassLayout.setBoxStrokeColor(Color.RED);
+                    edtRePass.requestFocus();
+                    imm.showSoftInput(edtRePass,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(name.isEmpty()){
+                    edtNameLayout.setHelperText("Required*");
+                    edtNameLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtNameLayout.setBoxStrokeColor(Color.RED);
+                    edtName.requestFocus();
+                    imm.showSoftInput(edtName,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(age.isEmpty()){
+                    edtAgeLayout.setHelperText("Required*");
+                    edtAgeLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtAgeLayout.setBoxStrokeColor(Color.RED);
+                    edtAge.requestFocus();
+                    imm.showSoftInput(edtAge,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(gender.isEmpty()){
+                    edtGenderLayout.setHelperText("Required*");
+                    edtGenderLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtGenderLayout.setBoxStrokeColor(Color.RED);
+                }
+                if(email.isEmpty()){
+                    edtEmailLayout.setHelperText("Required*");
+                    edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtEmailLayout.setBoxStrokeColor(Color.RED);
+                    edtEmail.requestFocus();
+                    imm.showSoftInput(edtEmail,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(phone.isEmpty()){
+                    edtPhoneLayout.setHelperText("Required*");
+                    edtPhoneLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtPhoneLayout.setBoxStrokeColor(Color.RED);
+                    edtPhone.requestFocus();
+                    imm.showSoftInput(edtPhone,InputMethodManager.SHOW_IMPLICIT);
                 }
                 else{
                     if(isPasswordMatch(password,repassword) && isPasswordStrong(password)){
-                        passClassifier.setVisibility(View.INVISIBLE);
-                        rePassClassifier.setVisibility(View.INVISIBLE);
                         StringRequest stringRequest = new StringRequest(Request.Method.POST, SIGNUP_SITE,
                                 new Response.Listener<String>() {
                                     @Override
@@ -259,9 +371,6 @@ public class SignUp extends Activity {
                                             message(response);
                                             edtEmail.requestFocus();
                                             imm.showSoftInput(edtEmail,InputMethodManager.SHOW_IMPLICIT);
-                                            emailClassifier.setVisibility(View.VISIBLE);
-                                            emailClassifier.setText(response);
-                                            emailClassifier.setTextColor(Color.RED);
                                         }
                                     }
                                 }, new Response.ErrorListener() {
@@ -282,6 +391,7 @@ public class SignUp extends Activity {
                                 params.put("Age",age);
                                 params.put("Gender",gender);
                                 params.put("Email",email);
+                                params.put("Phone",phone);
                                 return params;
                             }
                         };
@@ -293,18 +403,12 @@ public class SignUp extends Activity {
                     }
                     else{
                         if(!isPasswordMatch(password,repassword)){
-                            rePassClassifier.setVisibility(View.VISIBLE);
-                            rePassClassifier.setText("Password Mismatch!");
-                            rePassClassifier.setTextColor(Color.RED);
                             edtRePass.requestFocus();
                             imm.showSoftInput(edtRePass,InputMethodManager.SHOW_IMPLICIT);
                             progressDialog.dismiss();
                             return;
                         }
                         else if(!isPasswordStrong(password)){
-                            passClassifier.setVisibility(View.VISIBLE);
-                            passClassifier.setText("Weak Password");
-                            passClassifier.setTextColor(Color.RED);
                             edtPassword.requestFocus();
                             imm.showSoftInput(edtPassword,InputMethodManager.SHOW_IMPLICIT);
                             progressDialog.dismiss();
@@ -315,31 +419,71 @@ public class SignUp extends Activity {
             }
         });
     }
+    public void callWelcomeScreen(View view){
+        Intent intent = new Intent(SignUp.this,Welcome.class);
+        Pair[] pairs = new Pair[1];
+        pairs[0] = new Pair<View,String>(backButton,"signup_transition");
+        ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(SignUp.this,pairs);
+        startActivity(intent, options.toBundle());
+        finish();
+    }
     public void message(String message){
         Toast.makeText(this,message, LENGTH_LONG).show();
     }
+    /*
+        VALIDATION
+     */
     private boolean isPasswordStrong(String password) {
         // Check for at least 8 characters
         if (password.length() < 8) {
             return false;
         }
-
         // Check for at least one uppercase letter
         if (!password.matches(".*[A-Z].*")) {
             return false;
         }
-
         // Check for at least one digit
         if (!password.matches(".*\\d.*")) {
             return false;
         }
-
         // Check for at least one symbol (special character)
         if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*")) {
             return false;
         }
         return true;
     }
+
+    private String getMissingRequirements(String password) {
+        StringBuilder missingRequirements = new StringBuilder();
+
+        // Check for at least 8 characters
+        if (password.length() < 8) {
+            missingRequirements.append("Minimum 8 characters,\n");
+        }
+
+        // Check for at least one uppercase letter
+        if (!password.matches(".*[A-Z].*")) {
+            missingRequirements.append("Uppercase letter, \n");
+        }
+
+        // Check for at least one digit
+        if (!password.matches(".*\\d.*")) {
+            missingRequirements.append("Numeric character, \n");
+        }
+
+        // Check for at least one symbol (special character)
+        if (!password.matches(".*[!@#$%^&*()_+\\-=\\[\\]{};':\",./<>?].*")) {
+            missingRequirements.append("Special character, \n");
+        }
+
+        // Remove the trailing comma and space
+        if (missingRequirements.length() > 0) {
+            missingRequirements.delete(missingRequirements.length() - 2, missingRequirements.length());
+        }
+
+        return missingRequirements.toString();
+    }
+
     private boolean isPasswordMatch(String password, String repassword){
         // Use equals method to compare the text content of the EditTexts
         password = edtPassword.getText().toString().trim();

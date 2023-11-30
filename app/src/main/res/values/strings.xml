@@ -3,7 +3,7 @@
     <string name="tfe_od_camera_error" translation_description="Error regarding camera support[CHAR_LIMIT=40]">This device doesn\'t support Camera2 API.</string>
     <string name="slogan_name">Your Intelligent Food Companion</string>
     <string name="tagline">"Your Journey to Nutritional Brilliance Begins Here"</string>
-    <string name="powered_by">Powered By Nutrivision.</string>
+    <string name="powered_by">Powered By NutriLense.</string>
 
     <!--Titles-->
     <string name="first_slide">See Your Food, Know Your Health</string>
@@ -44,5 +44,16 @@
     <string name="forgot_password">Forgot Password</string>
     <string name="create_account">Create an Account</string>
     <string name="sign_in_with">or Sign in with:</string>
+
+    <!--SignUp names-->
+    <string name="enter_fullname">Full Name</string>
+    <string name="re_pass">Re-type your Password</string>
+    <string name="enter_pass">Password</string>
+    <string name="enter_user">Username</string>
+    <string name="enter_age">Age</string>
+    <string name="enter_gender">Gender</string>
+    <string name="enter_email">Email</string>
+    <string name="enter_phone">Phone</string>
+    <string name="signUp">Sign Up</string>
 
 </resources>
