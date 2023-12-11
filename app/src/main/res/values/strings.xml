@@ -1,5 +1,5 @@
 <resources>
-    <string name="tfe_od_app_name" translation_description="Object Detection [CHAR_LIMIT=40]">Nutrivision</string>
+    <string name="tfe_od_app_name" translation_description="Object Detection [CHAR_LIMIT=40]">NutriLense</string>
     <string name="tfe_od_camera_error" translation_description="Error regarding camera support[CHAR_LIMIT=40]">This device doesn\'t support Camera2 API.</string>
     <string name="slogan_name">Your Intelligent Food Companion</string>
     <string name="tagline">"Your Journey to Nutritional Brilliance Begins Here"</string>
@@ -10,6 +10,14 @@
     <string name="second_slide">Eating Smart Made Simple</string>
     <string name="third_slide">Personalized Nutrition Guidance</string>
     <string name="fourth_slide">Empowering Your Wellness Journey</string>
+    <string name="dashboard_title">Know Your Food</string>
+    <string name="link_sent">Link Sent</string>
+    <string name="network_error">Network Error</string>
+    <string name="featured_model">ALL FEATURED MODELS</string>
+    <string name="most_viewed">MOST VIEWED PRODUCTS</string>
+    <string name="categories">Categories</string>
+    <string name="view_all">View All</string>
+
 
     <!--Descriptions-->
     <string name="first_slide_desc">See food in real-time and let Nutrivision reveals the nutritional lowdown instantly. See your food, know your health—it\'s that easy!</string>
@@ -17,8 +25,11 @@
     <string name="third_slide_desc">Tailored tips for you! Nutrivision gives personalized nutrition advice based on your health needs. Your guide to eating well, just the way you like it.</string>
     <string name="fourth_slide_desc">More than an app—it\'s your health ally. Nutrivision empowers you with real-time info and personalized tips. Take charge of your wellness journey with Nutrivision.</string>
     <string name="forget_password_details">Input your email for the password reset link to be sent promptly and securely to your registered email address.</string>
-    <string name="link_sent">Link Sent</string>
     <string name="link_sent_desc">Password reset link has been successfully sent to </string>
+    <string name="network_error_desc">Please connect to the internet.</string>
+    <string name="navigation_open">Open navigation drawer</string>
+    <string name="navigation_close">Close navigation drawer</string>
+    <string name="featured_model_desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</string>
 
     <!--Buttons-->
     <string name="skip_btn">Skip</string>
@@ -35,6 +46,9 @@
     <string name="logout">LOGOUT</string>
     <string name="share">Share</string>
     <string name="rate_us">Rate Us</string>
+    <string name="realtime">Real Time</string>
+    <string name="image">Image</string>
+    <string name="products">Products</string>
 
     <!--All Categories Menu names-->
     <string name="expand_all">Expand All</string>

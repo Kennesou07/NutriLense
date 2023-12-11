@@ -25,6 +25,8 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -66,6 +68,7 @@ public class Login extends Activity {
     EditText editTextEmail;
     ProgressDialog progressDialog;
     InputMethodManager imm;
+    CheckBox remember;
     int GREEN = Color.rgb(0, 210, 0);
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +89,7 @@ public class Login extends Activity {
         editTextPassword = findViewById(R.id.passwordEditText);
         username = findViewById(R.id.textInputLayoutEmail);
         password = findViewById(R.id.textInputLayoutPassword);
+        remember = findViewById(R.id.remember_me);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Logging in");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
@@ -182,6 +186,23 @@ public class Login extends Activity {
                 Intent googleSignIn = gsc.getSignInIntent();
                 startActivityForResult(googleSignIn,1000);
 
+            }
+        });
+        remember.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if(compoundButton.isChecked()){
+                    SharedPreferences remember = getSharedPreferences("checkbox",MODE_PRIVATE);
+                    SharedPreferences.Editor editor = remember.edit();
+                    editor.putString("remember","true");
+                    editor.apply();
+                }
+                else if(!compoundButton.isChecked()){
+                    SharedPreferences remember = getSharedPreferences("checkbox",MODE_PRIVATE);
+                    SharedPreferences.Editor editor = remember.edit();
+                    editor.putString("remember","false");
+                    editor.apply();
+                }
             }
         });
     }

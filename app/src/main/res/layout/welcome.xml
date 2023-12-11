@@ -74,11 +74,13 @@
                 android:background="@color/design_default_color_primary_dark"
                 android:textColor="@color/white"
                 android:transitionName="signup_transition"
-                android:onClick="callSignUpScreen"/>
+                android:onClick="callSignUpScreen"
+                />
 
         </LinearLayout>
 
         <Button
+            android:id="@+id/howItWorksBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="How it works ?"
@@ -86,7 +88,8 @@
             android:layout_marginTop="20dp"
             android:layout_marginLeft="10dp"
             android:background="#00000000"
-            android:textColor="@color/black"/>
+            android:textColor="@color/black"
+            android:onClick="callBoardingScreen"/>
 
     </LinearLayout>
 

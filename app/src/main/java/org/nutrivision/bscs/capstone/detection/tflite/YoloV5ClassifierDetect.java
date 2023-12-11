@@ -22,6 +22,7 @@ import android.os.Build;
 import android.util.Log;
 
 import org.nutrivision.bscs.capstone.detection.MainActivity;
+import org.nutrivision.bscs.capstone.detection.SelectImage;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
 import org.nutrivision.bscs.capstone.detection.env.Utils;
 import org.tensorflow.lite.Interpreter;
@@ -219,7 +220,7 @@ public class YoloV5ClassifierDetect implements Classifier {
 
     @Override
     public float getObjThresh() {
-        return MainActivity.MINIMUM_CONFIDENCE_TF_OD_API;
+        return SelectImage.MINIMUM_CONFIDENCE_TF_OD_API;
     }
 
     private static final Logger LOGGER = new Logger();

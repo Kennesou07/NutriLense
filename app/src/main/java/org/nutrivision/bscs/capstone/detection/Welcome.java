@@ -9,6 +9,7 @@ import android.os.Parcelable;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
@@ -39,7 +40,11 @@ public class Welcome extends AppCompatActivity {
         ActivityOptions options = ActivityOptions.makeSceneTransitionAnimation(Welcome.this,pairs);
         startActivity(intent,options.toBundle());
     }
-
+    public void callBoardingScreen(View view){
+        intent = new Intent(Welcome.this,OnBoarding.class);
+        startActivity(intent);
+        finish();
+    }
     private void checkSession(){
         isLoggedIn = getSharedPreferences("LogInSession", MODE_PRIVATE);
         boolean isLogged = isLoggedIn.getBoolean("isLoggedIn", false);
