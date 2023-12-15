@@ -16,8 +16,11 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -27,13 +30,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 
+import org.nutrivision.bscs.capstone.detection.adapter.DetectedObjectsAdapter;
 import org.nutrivision.bscs.capstone.detection.customview.OverlayView;
 import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
@@ -48,8 +56,7 @@ import java.util.List;
 import java.util.Random;
 
 public class SelectImage extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
-    ImageView imageView;
-    Button selectButton,detectButton;
+    ImageView imageView,selectButton;
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
@@ -63,9 +70,9 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
 
     private static final boolean TF_OD_API_IS_QUANTIZED = false;
 
-    private static final String TF_OD_API_MODEL_FILE = "best-fp16.tflite";
+    private static final String TF_OD_API_MODEL_FILE = "model35.tflite";
 
-    private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/labels.txt";
+    private static final String TF_OD_API_LABELS_FILE = "file:///android_asset/label35.txt";
 
     // Minimum detection confidence to track a detection.
     private static final boolean MAINTAIN_ASPECT = true;
@@ -83,22 +90,37 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
 
     private Bitmap sourceBitmap;
     private Bitmap cropBitmap;
+    private LinearLayout contentView;
+    static final float END_SCALE = 0.7f;
+    private TextView noImageSelect;
+    private RecyclerView detectedObjectsRecyclerView;
+    private DetectedObjectsAdapter detectedObjectsAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.select_image);
         getPermission();
+        gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
+        gsc = GoogleSignIn.getClient(this,gso);
+        GoogleSignInAccount acc = GoogleSignIn.getLastSignedInAccount(this);
+        detectedObjectsAdapter = new DetectedObjectsAdapter();
 
         /*-------------------HOOKS-------------*/
         selectButton = findViewById(R.id.storageBtn);
-//        detectButton = findViewById(R.id.detectButton);
         imageView = findViewById(R.id.imgView);
         drawerLayout = findViewById(R.id.drawerLayout);
         navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
+        contentView = findViewById(R.id.content);
+        noImageSelect = findViewById(R.id.txtNoImage);
+        // Initialize RecyclerView and its adapter
+        detectedObjectsRecyclerView = findViewById(R.id.detectedObjectsRecyclerView);
+
         /*----------------TOOLBAR---------------*/
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
+
         /*-------------NAVIGATION DRAWER MENU---------------*/
 //        Menu menu = navigationView.getMenu();
         navigationView.bringToFront();
@@ -107,6 +129,7 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_select_image);
+        animateNavigationDrawer();
 
         /*-------------------USE----------------*/
         selectButton.setOnClickListener(view -> {
@@ -115,26 +138,14 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
             intent.setAction(Intent.ACTION_GET_CONTENT);
             startActivityForResult(Intent.createChooser(intent, "Select Photo"), SELECT_CODE);
         });
+        detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
 
-//        detectButton.setOnClickListener(v -> {
-//            Handler handler = new Handler();
-//
-//            new Thread(() -> {
-//                final List<Classifier.Recognition> results = detector.recognizeImage(cropBitmap);
-//                handler.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        handleResult(cropBitmap, results);
-//                    }
-//                });
-//            }).start();
-//        });
-
-        this.sourceBitmap = Utils.getBitmapFromAsset(SelectImage.this, "sample.jpg");
+//        this.sourceBitmap = Utils.getBitmapFromAsset(SelectImage.this, "sample.jpg");
 
         if (sourceBitmap != null) {
             this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
-
+            noImageSelect.setVisibility(View.INVISIBLE);
             if (cropBitmap != null) {
                 this.imageView.setImageBitmap(cropBitmap);
                 initBox();
@@ -145,6 +156,7 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         } else {
             // Log an error or show a message indicating an issue with loading the bitmap from the asset.
             Log.e("MainActivity", "Error loading bitmap from asset");
+            noImageSelect.setVisibility(View.VISIBLE);
         }
 
         initBox();
@@ -227,7 +239,7 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         trackingOverlay.addCallback(
                 canvas -> tracker.draw(canvas));
 
-        tracker.setFrameConfiguration(TF_OD_API_INPUT_SIZE, TF_OD_API_INPUT_SIZE, sensorOrientation);
+        tracker.setFrameConfiguration(previewHeight, previewWidth, sensorOrientation);
 
         try {
             detector =
@@ -292,6 +304,8 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
 ////            tracker.trackResults(mappedRecognitions, new Random().nextInt());
 ////            trackingOverlay.postInvalidate();
             imageView.setImageBitmap(bitmap);
+            // Update data in the adapter when needed
+            detectedObjectsAdapter.updateData(mappedRecognitions);
         }
     }
     public void onBackPressed() {
@@ -338,5 +352,25 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
+    }
+    private void animateNavigationDrawer() {
+        //Add any color or remove it to use the default one!
+        //To make it transparent use Color.Transparent in side setScrimColor();
+        drawerLayout.setScrimColor(getResources().getColor(R.color.tfe_color_primary_dark));
+        drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerSlide(View drawerView, float slideOffset) {
+                // Scale the View based on current slide offset
+                final float diffScaledOffset = slideOffset * (1 - END_SCALE);
+                final float offsetScale = 1 - diffScaledOffset;
+                contentView.setScaleX(offsetScale);
+                contentView.setScaleY(offsetScale);
+                // Translate the View, accounting for the scaled width
+                final float xOffset = drawerView.getWidth() * slideOffset;
+                final float xOffsetDiff = contentView.getWidth() * diffScaledOffset / 2;
+                final float xTranslation = xOffset - xOffsetDiff;
+                contentView.setTranslationX(xTranslation);
+            }
+        });
     }
 }

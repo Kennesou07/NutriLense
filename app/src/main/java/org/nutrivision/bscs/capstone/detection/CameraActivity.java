@@ -3,6 +3,8 @@ package org.nutrivision.bscs.capstone.detection;
 import android.Manifest;
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.hardware.Camera;
@@ -20,10 +22,15 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Trace;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import android.util.Size;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -35,7 +42,15 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.navigation.NavigationView;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -49,7 +64,8 @@ public abstract class CameraActivity extends AppCompatActivity
     implements OnImageAvailableListener,
         Camera.PreviewCallback,
 //        CompoundButton.OnCheckedChangeListener,
-        View.OnClickListener {
+        View.OnClickListener,
+        NavigationView.OnNavigationItemSelectedListener {
   private static final Logger LOGGER = new Logger();
 
   private static final int PERMISSIONS_REQUEST = 1;
@@ -82,6 +98,13 @@ public abstract class CameraActivity extends AppCompatActivity
   protected ListView deviceView;
   protected TextView threadsTextView;
   protected ListView modelView;
+  protected  DrawerLayout drawerLayout;
+  protected  NavigationView navigationView;
+  static final float END_SCALE = 0.7f;
+  protected GoogleSignInOptions gso;
+  protected GoogleSignInClient gsc;
+  protected CoordinatorLayout contentView;
+
   /** Current indices of device and model. */
   int currentDevice = -1;
   int currentModel = -1;
@@ -202,8 +225,23 @@ public abstract class CameraActivity extends AppCompatActivity
     cropValueTextView = findViewById(R.id.crop_info);
     inferenceTimeTextView = findViewById(R.id.inference_info);
 
+    gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
+    gsc = GoogleSignIn.getClient(this,gso);
+    GoogleSignInAccount acc = GoogleSignIn.getLastSignedInAccount(this);
     plusImageView.setOnClickListener(this);
     minusImageView.setOnClickListener(this);
+    drawerLayout = findViewById(R.id.drawerLayout);
+    contentView = findViewById(R.id.containerView);
+    navigationView = findViewById(R.id.nav_view);
+    /*-------------NAVIGATION DRAWER MENU---------------*/
+//        Menu menu = navigationView.getMenu();
+    navigationView.bringToFront();
+    ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this,drawerLayout,toolbar,R.string.navigation_open,R.string.navigation_close);
+    drawerLayout.addDrawerListener(toggle);
+    toggle.syncState();
+    navigationView.setNavigationItemSelectedListener(this);
+    navigationView.setCheckedItem(R.id.nav_realtime);
+    animateNavigationDrawer();
   }
 
 
@@ -605,4 +643,64 @@ public abstract class CameraActivity extends AppCompatActivity
   protected abstract void setNumThreads(int numThreads);
 
   protected abstract void setUseNNAPI(boolean isChecked);
+  public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+    switch (item.getItemId()){
+      case R.id.nav_home:
+        startActivity(new Intent(CameraActivity.this,MainActivity.class));
+      case R.id.nav_realtime:
+        break;
+      case R.id.nav_select_image:
+        startActivity(new Intent(CameraActivity.this, SelectImage.class));
+        break;
+      case R.id.nav_logout:
+        logout();
+        break;
+    }
+    drawerLayout.closeDrawer(GravityCompat.START);
+    return true;
+  }
+  private void animateNavigationDrawer() {
+    drawerLayout.setScrimColor(getResources().getColor(R.color.tfe_color_primary_dark));
+    drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+      @Override
+      public void onDrawerSlide(View drawerView, float slideOffset) {
+        // Scale the View based on current slide offset
+        final float diffScaledOffset = slideOffset * (1 - END_SCALE);
+        final float offsetScale = 1 - diffScaledOffset;
+        contentView.setScaleX(offsetScale);
+        contentView.setScaleY(offsetScale);
+        // Translate the View, accounting for the scaled width
+        final float xOffset = drawerView.getWidth() * slideOffset;
+        final float xOffsetDiff = contentView.getWidth() * diffScaledOffset / 2;
+        final float xTranslation = xOffset - xOffsetDiff;
+        contentView.setTranslationX(xTranslation);
+      }
+    });
+  }
+  private void logout() {
+    gsc.signOut().addOnCompleteListener(new OnCompleteListener<Void>() {
+      @Override
+      public void onComplete(@NonNull Task<Void> task) {
+        clearPreferences();
+        finish();
+        startActivity(new Intent(CameraActivity.this, Login.class));
+      }
+    });
+  }
+
+  private void clearPreferences() {
+    SharedPreferences preferences = getSharedPreferences("LogInSession", MODE_PRIVATE);
+    SharedPreferences.Editor editor = preferences.edit();
+    editor.clear();
+    editor.apply();
+  }
+  public void onBackPressed() {
+    if(drawerLayout.isDrawerOpen(GravityCompat.START)){
+      drawerLayout.closeDrawer(GravityCompat.START);
+    }
+    else {
+      super.onBackPressed();
+    }
+  }
+
 }

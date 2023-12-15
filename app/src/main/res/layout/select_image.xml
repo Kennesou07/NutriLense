@@ -5,52 +5,93 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SelectImage">
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:minHeight="?attr/actionBarSize"
-            android:theme="?attr/actionBarTheme"
-            app:navigationIcon="@drawable/drawer_icon" />
-
-        <ImageView
-            android:id="@+id/imgView"
-            android:layout_width="350dp"
-            android:layout_height="400dp"
-            android:layout_centerHorizontal="true"
-            android:layout_marginTop="20dp"
-            android:background="@color/black" />
-
-        <Button
-            android:id="@+id/storageBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/imgView"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:text="Select Image" />
-
-        <org.nutrivision.bscs.capstone.detection.customview.OverlayView
-            android:id="@+id/tracking_overlay"
-            android:layout_width="416dp"
-            android:layout_height="416dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-    </RelativeLayout>
+    android:fitsSystemWindows="true"
+    tools:context=".SelectImage"
+    tools:openDrawer="start">
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:theme="@style/navigationTheme"
         app:headerLayout="@layout/header"
         app:menu="@menu/main_menu" />
+
+    <LinearLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/white">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:minHeight="?attr/actionBarSize"
+            android:theme="?attr/actionBarTheme"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:navigationIcon="@drawable/drawer_icon">
+
+            <ImageView
+                android:id="@+id/storageBtn"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="right"
+                android:layout_marginRight="20dp"
+                android:src="@drawable/add_image_icon" />
+        </androidx.appcompat.widget.Toolbar>
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="20dp">
+                <TextView
+                    android:id="@+id/txtNoImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:layout_centerVertical="true"
+                    android:text="No Image Selected"
+                    android:textSize="30sp"
+                    android:fontFamily="@font/baloo"
+                    android:textColor="@color/black"
+                    android:visibility="visible"/>
+                <ImageView
+                    android:id="@+id/imgView"
+                    android:layout_width="match_parent"
+                    android:layout_height="400dp"
+                    android:background="@color/white"
+                    android:padding="20dp" />
+
+                <org.nutrivision.bscs.capstone.detection.customview.OverlayView
+                    android:id="@+id/tracking_overlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="400dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/detectedObjectsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/imgView"
+                    android:layout_marginTop="20dp"
+                    android:background="@color/tfe_color_primary_dark"
+                    android:visibility="visible" />
+            </RelativeLayout>
+        </ScrollView>
+
+    </LinearLayout>
+
 </androidx.drawerlayout.widget.DrawerLayout>

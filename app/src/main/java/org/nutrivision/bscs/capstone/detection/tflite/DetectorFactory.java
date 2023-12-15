@@ -26,8 +26,8 @@ public class DetectorFactory {
                     10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
             };
         }
-        else if (modelFilename.equals("best-fp16.tflite")) {
-            labelFilename = "file:///android_asset/labels.txt";
+        else if (modelFilename.equals("model35.tflite")) {
+            labelFilename = "file:///android_asset/label35.txt";
             isQuantized = false;
             inputSize = 416;
             output_width = new int[]{40, 20, 10};
