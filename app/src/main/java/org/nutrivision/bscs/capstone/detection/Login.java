@@ -125,9 +125,14 @@ public class Login extends Activity {
                                             SharedPreferences preferences = getSharedPreferences("LogInSession", MODE_PRIVATE);
                                             SharedPreferences.Editor editor = preferences.edit();
                                             editor.putString("username", username);
+                                            editor.putString("password",password);
                                             editor.putBoolean("isLoggedIn", true);
                                             editor.apply();
+                                            Map<String, ?> allEntries = preferences.getAll();
 
+                                            for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+                                                Log.d("SharedPreferences", entry.getKey() + ": " + entry.getValue().toString());
+                                            }
                                             Toast.makeText(Login.this,"Login Success! Please wait.",LENGTH_SHORT).show();
                                             Intent intent = new Intent(Login.this,MainActivity.class);
                                             startActivity(intent);
@@ -192,15 +197,15 @@ public class Login extends Activity {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
                 if(compoundButton.isChecked()){
-                    SharedPreferences remember = getSharedPreferences("checkbox",MODE_PRIVATE);
+                    SharedPreferences remember = getSharedPreferences("LogInSession",MODE_PRIVATE);
                     SharedPreferences.Editor editor = remember.edit();
-                    editor.putString("remember","true");
+                    editor.putBoolean("remember",true);
                     editor.apply();
                 }
-                else if(!compoundButton.isChecked()){
-                    SharedPreferences remember = getSharedPreferences("checkbox",MODE_PRIVATE);
+                if(!compoundButton.isChecked()){
+                    SharedPreferences remember = getSharedPreferences("LogInSession",MODE_PRIVATE);
                     SharedPreferences.Editor editor = remember.edit();
-                    editor.putString("remember","false");
+                    editor.putBoolean("remember",false);
                     editor.apply();
                 }
             }

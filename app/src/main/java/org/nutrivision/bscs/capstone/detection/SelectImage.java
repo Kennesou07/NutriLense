@@ -137,6 +137,7 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
             intent.setType("image/*");
             intent.setAction(Intent.ACTION_GET_CONTENT);
             startActivityForResult(Intent.createChooser(intent, "Select Photo"), SELECT_CODE);
+            noImageSelect.setVisibility(View.INVISIBLE);
         });
         detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
@@ -145,7 +146,6 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
 
         if (sourceBitmap != null) {
             this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
-            noImageSelect.setVisibility(View.INVISIBLE);
             if (cropBitmap != null) {
                 this.imageView.setImageBitmap(cropBitmap);
                 initBox();
@@ -156,10 +156,9 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         } else {
             // Log an error or show a message indicating an issue with loading the bitmap from the asset.
             Log.e("MainActivity", "Error loading bitmap from asset");
-            noImageSelect.setVisibility(View.VISIBLE);
         }
-
         initBox();
+        noImageSelect.setVisibility(View.VISIBLE);
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         ConfigurationInfo configurationInfo = activityManager.getDeviceConfigurationInfo();
 

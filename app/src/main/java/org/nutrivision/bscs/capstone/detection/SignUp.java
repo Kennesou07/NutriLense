@@ -147,10 +147,12 @@ public class SignUp extends Activity {
                                     edtUsernameLayout.setHelperText("Username Exist");
                                     edtUsernameLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
                                     edtUsernameLayout.setBoxStrokeColor(Color.RED);
+                                    btnSignUp.setEnabled(false);
                                 } else {
                                     edtUsernameLayout.setHelperText("Valid Username");
                                     edtUsernameLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
                                     edtUsernameLayout.setBoxStrokeColor(GREEN);
+                                    btnSignUp.setEnabled(true);
                                 }
                             }
                         }, new Response.ErrorListener() {
@@ -189,11 +191,13 @@ public class SignUp extends Activity {
                     edtPasswordLayout.setHelperText("Weak Password: " + missingRequirements);
                     edtPasswordLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
                     edtPasswordLayout.setBoxStrokeColor(Color.RED);
+                    btnSignUp.setEnabled(false);
                 } else {
                     // Password is strong, clear the helper text and set box stroke color to green
                     edtPasswordLayout.setHelperText("Strong Password");
                     edtPasswordLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
                     edtPasswordLayout.setBoxStrokeColor(GREEN);
+                    btnSignUp.setEnabled(true);
                 }
             }
 
@@ -248,6 +252,7 @@ public class SignUp extends Activity {
                     edtEmailLayout.setHelperText("Invalid email address!");
                     edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
                     edtEmailLayout.setBoxStrokeColor(Color.RED);
+                    btnSignUp.setEnabled(false);
                 }
                 else{
                     StringRequest stringRequest = new StringRequest(Request.Method.POST, EMAIL_SITE,
@@ -258,10 +263,12 @@ public class SignUp extends Activity {
                                         edtEmailLayout.setHelperText("Email already exist!");
                                         edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
                                         edtEmailLayout.setBoxStrokeColor(Color.RED);
+                                        btnSignUp.setEnabled(false);
                                     } else {
                                         edtEmailLayout.setHelperText("Valid email");
                                         edtEmailLayout.setHelperTextColor(ColorStateList.valueOf(GREEN));
                                         edtUsernameLayout.setBoxStrokeColor(GREEN);
+                                        btnSignUp.setEnabled(true);
                                     }
                                 }
                             }, new Response.ErrorListener() {

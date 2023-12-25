@@ -22,8 +22,8 @@
         android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="@color/white">
+        android:background="@color/white"
+        android:orientation="vertical">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
@@ -54,18 +54,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="20dp">
-                <TextView
-                    android:id="@+id/txtNoImage"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:textAlignment="center"
-                    android:layout_centerVertical="true"
-                    android:text="No Image Selected"
-                    android:textSize="30sp"
-                    android:fontFamily="@font/baloo"
-                    android:textColor="@color/black"
-                    android:visibility="visible"/>
+
                 <ImageView
                     android:id="@+id/imgView"
                     android:layout_width="match_parent"
@@ -89,6 +78,19 @@
                     android:layout_marginTop="20dp"
                     android:background="@color/tfe_color_primary_dark"
                     android:visibility="visible" />
+
+                <TextView
+                    android:id="@+id/txtNoImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_centerVertical="true"
+                    android:fontFamily="@font/baloo"
+                    android:gravity="center"
+                    android:text="No Image Selected"
+                    android:textAlignment="center"
+                    android:textColor="@color/black"
+                    android:textSize="20sp"
+                    android:visibility="invisible" />
             </RelativeLayout>
         </ScrollView>
 
