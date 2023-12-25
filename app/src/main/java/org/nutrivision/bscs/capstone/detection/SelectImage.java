@@ -55,7 +55,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-public class SelectImage extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class SelectImage extends AppCompatActivity implements
+        NavigationView.OnNavigationItemSelectedListener{
     ImageView imageView,selectButton;
     DrawerLayout drawerLayout;
     NavigationView navigationView;
@@ -141,7 +142,14 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
         });
         detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
-
+        //TODO DISPLAY ALL INFORMATION OF PRODUCT WHICH IS NOT NULL IN INFLATER VIEW MAKE A METHOD
+        detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(String objectName) {
+                Toast.makeText(SelectImage.this,"Clicked: " + objectName,Toast.LENGTH_SHORT).show();
+                Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
+            }
+        });
 //        this.sourceBitmap = Utils.getBitmapFromAsset(SelectImage.this, "sample.jpg");
 
         if (sourceBitmap != null) {
@@ -206,6 +214,7 @@ public class SelectImage extends AppCompatActivity implements NavigationView.OnN
             requestPermissions(new String[] {Manifest.permission.CAMERA},103);
         }
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

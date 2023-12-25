@@ -16,7 +16,8 @@ import java.util.List;
 
 public class DetectedObjectsAdapter extends RecyclerView.Adapter<DetectedObjectsAdapter.ViewHolder> {
 
-    private List<Classifier.Recognition> detectedObjects = new ArrayList<>();
+    private static List<Classifier.Recognition> detectedObjects = new ArrayList<>();
+    private OnItemClickListener itemClickListener;
 
     public void updateData(List<Classifier.Recognition> newDetectedObjects) {
         detectedObjects.clear();
@@ -29,7 +30,7 @@ public class DetectedObjectsAdapter extends RecyclerView.Adapter<DetectedObjects
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         Log.d("DetectedObjectsAdapter", "onCreateViewHolder");
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_detected_object, parent, false);
-        return new ViewHolder(view);
+        return new ViewHolder(view, itemClickListener);
     }
 
     @Override
@@ -48,9 +49,21 @@ public class DetectedObjectsAdapter extends RecyclerView.Adapter<DetectedObjects
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView objectNameTextView;
 
-        public ViewHolder(@NonNull View itemView) {
+        public ViewHolder(@NonNull View itemView,OnItemClickListener listener) {
             super(itemView);
             objectNameTextView = itemView.findViewById(R.id.objectNameTextView);
+            itemView.setOnClickListener(view -> {
+                int position = getAdapterPosition();
+                if (position != RecyclerView.NO_POSITION) {
+                    listener.onItemClick(detectedObjects.get(position).getTitle());
+                }
+            });
         }
+    }
+    public interface OnItemClickListener{
+        void onItemClick(String objectName);
+    }
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.itemClickListener = listener;
     }
 }

@@ -135,6 +135,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         detectedObjectsAdapter = new DetectedObjectsAdapter();
         detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
+        detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(String objectName) {
+                //TODO DISPLAY ALL INFORMATION OF PRODUCT WHICH IS NOT NULL IN INFLATER VIEW MAKE A METHOD
+                Toast.makeText(DetectorActivity.this,"Clicked: " + objectName,Toast.LENGTH_SHORT).show();
+                Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
+            }
+        });
     }
 
     protected void updateActiveModel() {

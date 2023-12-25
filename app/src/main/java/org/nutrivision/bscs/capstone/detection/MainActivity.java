@@ -51,27 +51,13 @@ import com.google.android.material.navigation.NavigationView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.nutrivision.bscs.capstone.detection.R;
 import org.nutrivision.bscs.capstone.detection.adapter.FeaturedAdapter;
 import org.nutrivision.bscs.capstone.detection.adapter.FeaturedClass;
 import org.nutrivision.bscs.capstone.detection.adapter.mostViewedProductsAdapter;
-import org.nutrivision.bscs.capstone.detection.customview.OverlayView;
-import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
-import org.nutrivision.bscs.capstone.detection.env.Logger;
-import org.nutrivision.bscs.capstone.detection.env.Utils;
-import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
-import org.nutrivision.bscs.capstone.detection.tflite.YoloV5Classifier;
-import org.nutrivision.bscs.capstone.detection.tracking.MultiBoxTracker;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private Questions questionBank;
@@ -133,8 +119,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private void Recycler() {
-        /*---------------FEATURED MODELS-------------*/
 
+        /*---------------FEATURED MODELS-------------*/
         featuredRecycler.setHasFixedSize(true);
         featuredRecycler.setLayoutManager(new LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false));
 
