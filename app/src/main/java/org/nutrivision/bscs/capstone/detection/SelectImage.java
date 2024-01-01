@@ -1,7 +1,10 @@
 package org.nutrivision.bscs.capstone.detection;
 
+import static org.nutrivision.bscs.capstone.detection.API.PRODUCT_DETAILS;
+
 import android.Manifest;
 import android.app.ActivityManager;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,8 +18,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -33,6 +39,14 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -41,7 +55,11 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.nutrivision.bscs.capstone.detection.adapter.DetectedObjectsAdapter;
+import org.nutrivision.bscs.capstone.detection.adapter.NutritionAdapter;
+import org.nutrivision.bscs.capstone.detection.adapter.NutritionItem;
 import org.nutrivision.bscs.capstone.detection.customview.OverlayView;
 import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
@@ -51,8 +69,12 @@ import org.nutrivision.bscs.capstone.detection.tflite.YoloV5Classifier;
 import org.nutrivision.bscs.capstone.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class SelectImage extends AppCompatActivity implements
@@ -96,6 +118,8 @@ public class SelectImage extends AppCompatActivity implements
     private TextView noImageSelect;
     private RecyclerView detectedObjectsRecyclerView;
     private DetectedObjectsAdapter detectedObjectsAdapter;
+    private List<NutritionItem> nutritionItemList = new ArrayList<>();
+    private String prodName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,12 +166,12 @@ public class SelectImage extends AppCompatActivity implements
         });
         detectedObjectsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         detectedObjectsRecyclerView.setAdapter(detectedObjectsAdapter);
-        //TODO DISPLAY ALL INFORMATION OF PRODUCT WHICH IS NOT NULL IN INFLATER VIEW MAKE A METHOD
         detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String objectName) {
-                Toast.makeText(SelectImage.this,"Clicked: " + objectName,Toast.LENGTH_SHORT).show();
+                Toast.makeText(SelectImage.this,"Please wait! " ,Toast.LENGTH_SHORT).show();
                 Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
+                displayInformation(objectName);
             }
         });
 //        this.sourceBitmap = Utils.getBitmapFromAsset(SelectImage.this, "sample.jpg");
@@ -380,5 +404,99 @@ public class SelectImage extends AppCompatActivity implements
                 contentView.setTranslationX(xTranslation);
             }
         });
+    }
+    private void displayInformation(String objectName) {
+        prodName = objectName;
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, PRODUCT_DETAILS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Log.d("RawResponse", response); // Print the raw response
+
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Proceed with parsing as JSON
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String result = jsonObject.getString("status");
+
+                                    if (result.equals("success")) {
+                                        // Extract data from the JSON response
+                                        JSONObject data = jsonObject.getJSONObject("data");
+
+                                        // Now data contains only non-null values, you can iterate over it
+                                        Iterator<String> keys = data.keys();
+                                        nutritionItemList.clear();
+                                        while (keys.hasNext()) {
+                                            String key = keys.next();
+                                            String value = data.getString(key);
+                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !value.equals("0g")) {
+                                                // Create a NutritionItem for each key-value pair
+                                                NutritionItem nutritionItem = new NutritionItem(key, value);
+                                                nutritionItemList.add(nutritionItem);
+                                                // Handle key-value pairs as needed
+                                                Log.d("NutritionInfo", key + ": " + value);
+                                            }
+                                        }
+                                        // Update your UI or perform other actions with the retrieved data
+                                        updateRecyclerView(nutritionItemList);
+                                    } else {
+                                        // Handle the case where the status is not "success"
+                                        String message = jsonObject.getString("message");
+                                        Log.e("Error", "Server response: " + message);
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("productName", objectName);
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(SelectImage.this);
+        queue.add(stringRequest);
+    }
+    private void updateRecyclerView(List<NutritionItem> nutritionItemList) {
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = inflater.inflate(R.layout.inflater_product_details,null);
+        RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
+        TextView productName = dialogView.findViewById(R.id.ProductName);
+        Button btnDone = dialogView.findViewById(R.id.Done);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        productName.setText(prodName);
+        // Create an adapter for the RecyclerView
+        NutritionAdapter adapter = new NutritionAdapter(nutritionItemList);
+        recyclerView.setAdapter(adapter);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        final AlertDialog productDialog = builder.create();
+        Animation sideAnim = AnimationUtils.loadAnimation(this,R.anim.side_animation);
+        dialogView.setAnimation(sideAnim);
+
+        productDialog.show();
+        btnDone.setOnClickListener(view -> productDialog.dismiss());
     }
 }
