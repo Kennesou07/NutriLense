@@ -1,5 +1,11 @@
 package org.nutrivision.bscs.capstone.detection;
 
+import static org.nutrivision.bscs.capstone.detection.API.HEALTH_CONDITION;
+import static org.nutrivision.bscs.capstone.detection.API.PRODUCT_DETAILS;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -11,29 +17,54 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.nutrivision.bscs.capstone.detection.adapter.DetectedObjectsAdapter;
+import org.nutrivision.bscs.capstone.detection.adapter.NutritionAdapter;
+import org.nutrivision.bscs.capstone.detection.adapter.NutritionItem;
 import org.nutrivision.bscs.capstone.detection.env.BorderedText;
 import org.nutrivision.bscs.capstone.detection.env.ImageUtils;
 import org.nutrivision.bscs.capstone.detection.env.Logger;
 import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.nutrivision.bscs.capstone.detection.customview.OverlayView;
 import org.nutrivision.bscs.capstone.detection.customview.OverlayView.DrawCallback;
 import org.nutrivision.bscs.capstone.detection.tflite.DetectorFactory;
 import org.nutrivision.bscs.capstone.detection.tflite.YoloV5Classifier;
 import org.nutrivision.bscs.capstone.detection.tracking.MultiBoxTracker;
+import org.w3c.dom.Text;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -70,6 +101,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private BorderedText borderedText;
     private RecyclerView detectedObjectsRecyclerView;
     private DetectedObjectsAdapter detectedObjectsAdapter;
+    private String prodName;
+    private List<NutritionItem> nutritionItemList = new ArrayList<>();
 
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -138,9 +171,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String objectName) {
-                //TODO DISPLAY ALL INFORMATION OF PRODUCT WHICH IS NOT NULL IN INFLATER VIEW MAKE A METHOD
                 Toast.makeText(DetectorActivity.this,"Clicked: " + objectName,Toast.LENGTH_SHORT).show();
                 Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
+                displayInformation(objectName);
             }
         });
     }
@@ -326,5 +359,283 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     @Override
     protected void setNumThreads(final int numThreads) {
         runInBackground(() -> detector.setNumThreads(numThreads));
+    }
+    private void displayInformation(String objectName) {
+        prodName = objectName;
+        SharedPreferences getID = getSharedPreferences("LogInSession",MODE_PRIVATE);
+        int ID = getID.getInt("userId",0);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, PRODUCT_DETAILS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Log.d("RawResponse", response); // Print the raw response
+
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Proceed with parsing as JSON
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String result = jsonObject.getString("status");
+
+                                    if (result.equals("success")) {
+                                        // Extract data from the JSON response
+                                        JSONObject data = jsonObject.getJSONObject("data");
+
+                                        // Now data contains only non-null values, you can iterate over it
+                                        Iterator<String> keys = data.keys();
+                                        nutritionItemList.clear();
+                                        while (keys.hasNext()) {
+                                            String key = keys.next();
+                                            String value = data.getString(key);
+                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !key.equals("Category")) {
+                                                // Create a NutritionItem for each key-value pair
+                                                NutritionItem nutritionItem = new NutritionItem(key, value);
+                                                nutritionItemList.add(nutritionItem);
+                                                // Handle key-value pairs as needed
+                                                Log.d("NutritionInfo", key + ": " + value);
+                                            }
+                                        }
+                                        checkHealthCondition(ID,nutritionItemList);
+                                        // Update your UI or perform other actions with the retrieved data
+                                       // updateRecyclerView(nutritionItemList,false,null,null);
+                                    } else {
+                                        // Handle the case where the status is not "success"
+                                        String message = jsonObject.getString("message");
+                                        Log.e("Error", "Server response: " + message);
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("productName", objectName);
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(DetectorActivity.this);
+        queue.add(stringRequest);
+    }
+    private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String triggeringCondition, String highIn) {
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = inflater.inflate(R.layout.inflater_product_details,null);
+        RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
+        TextView productName = dialogView.findViewById(R.id.ProductName);
+        Button btnDone = dialogView.findViewById(R.id.Done);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        productName.setText(prodName);
+        // Create an adapter for the RecyclerView
+        NutritionAdapter adapter = new NutritionAdapter(nutritionItemList);
+        recyclerView.setAdapter(adapter);
+
+        // Update the color of the product name based on health condition
+        if (isSafeToConsume) {
+            productName.setTextColor(getResources().getColor(R.color.green)); // Set color to green
+
+            // Add a note under the product name
+            TextView noteTextView = dialogView.findViewById(R.id.Note);
+            noteTextView.setText("This food is safe to consume.");
+
+        } else {
+            productName.setTextColor(getResources().getColor(R.color.red)); // Set color to red
+
+            // Display a warning based on the triggering health condition
+            String warningMessage = "This food is high in " +highIn+ " might trigger " + triggeringCondition + ".";
+            // Add a warning under the product name
+            TextView warningTextView = dialogView.findViewById(R.id.Note);
+            warningTextView.setText(warningMessage);
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView);
+        final AlertDialog productDialog = builder.create();
+        Animation sideAnim = AnimationUtils.loadAnimation(this,R.anim.side_animation);
+        dialogView.setAnimation(sideAnim);
+
+        productDialog.show();
+        btnDone.setOnClickListener(view -> productDialog.dismiss());
+    }
+    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList){
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, HEALTH_CONDITION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Log.d("RawResponse", response); // Print the raw response
+
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Proceed with parsing as JSON
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String result = jsonObject.getString("status");
+
+                                    if (result.equals("success")) {
+                                        // Extract data from the JSON response
+                                        JSONObject data = jsonObject.getJSONObject("data");
+
+                                        // Check for specific health conditions
+                                        List<String> triggeringConditions = new ArrayList<>();
+                                        List<String> highIn = new ArrayList<>();
+                                        String isDiabeticString = data.getString("isDiabetic");
+                                        boolean isDiabetic = isDiabeticString.equalsIgnoreCase("yes");
+
+                                        String isHighBloodString = data.getString("isHighBlood");
+                                        boolean isHighBlood = isHighBloodString.equalsIgnoreCase("yes");
+
+                                        String hasHeartProblemString = data.getString("hasHeartProblem");
+                                        boolean hasHeartProblem = hasHeartProblemString.equalsIgnoreCase("yes");
+
+                                        String hasKidneyProblemString = data.getString("hasKidneyProblem");
+                                        boolean hasKidneyProblem = hasKidneyProblemString.equalsIgnoreCase("yes");
+
+                                        String isObeseString = data.getString("isObese");
+                                        boolean isObese = isObeseString.equalsIgnoreCase("yes");
+
+                                        // Analyze nutrition details based on health conditions
+                                        if (isDiabetic) {
+                                            analyzeForDiabetes(nutritionItemList);
+                                        }
+
+                                        if (isHighBlood) {
+                                            analyzeForHighBloodPressure(nutritionItemList);
+                                        }
+                                        else{
+
+                                        }
+                                        //updateRecyclerView(nutritionItemList, true, allTriggers,"");
+                                    } else {
+                                        // Handle the case where the status is not "success"
+                                        String message = jsonObject.getString("message");
+                                        Log.e("Error", "Server response: " + message);
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(ID));
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(DetectorActivity.this);
+        queue.add(stringRequest);
+    }
+    private void analyzeForDiabetes(List<NutritionItem> nutritionItemList) {
+        boolean safeToConsume = true;
+        double totalCalories = 0;
+        String triggerConditions = "";
+        List<String> triggerCondition = new ArrayList<>();
+        List<String> highIn = new ArrayList<>();
+        for (NutritionItem item : nutritionItemList) {
+            String key = item.getLabel();
+            double value = extractNumericValue(item.getValue());
+
+            switch (key) {
+                case "Calories":
+                    totalCalories = value;
+                    double caloriesSafeRange = 2000;
+                    if (totalCalories > caloriesSafeRange) {
+                        triggerCondition.add("diabetes");
+                        highIn.add("calories");
+                        safeToConsume = false;
+                    }
+                    break;
+
+                case "Total Carbohydrate":
+                    double maxCarbohydrates = 60; //60g
+                    if (value > maxCarbohydrates) {
+                        triggerCondition.add("diabetes");
+                        highIn.add("carbohydrates");
+                        safeToConsume = false;
+                    }
+                    break;
+
+                case "Added Sugar":
+                    double sugarSafeRange = 25; //25g
+                    if (value > sugarSafeRange) {
+                        triggerCondition.add("diabetes");
+                        highIn.add("added sugar");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Dietary Fiber":
+                    double fiberSafeRange = 25; //25g
+                    if(value > fiberSafeRange){
+                        triggerCondition.add("diabetes");
+                        highIn.add("fiber");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Sodium":
+                    double sodiumSafeRange = 1500; //1500mg
+                    if(value > sodiumSafeRange){
+                        triggerCondition.add("diabetes");
+                        highIn.add("salt/sodium");
+                        safeToConsume = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        if(triggerCondition.contains("diabetes")){
+            triggerConditions = triggerCondition.toString();
+        }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList,safeToConsume,triggerConditions,allhighIn);
+        Log.e("Trigger","Trigger List: "+ triggerConditions);
+        Log.e("Trigger","high in List: "+ allhighIn);
+        Log.e("Trigger","Safe to Consume?: "+ safeToConsume);
+    }
+    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
+
+    }
+    private double extractNumericValue(String input) {
+        // Assuming the input is in the format "123mg" or "456g" etc.
+        String numericValue = input.replaceAll("[^\\d.]+", "");
+        return Double.parseDouble(numericValue);
     }
 }
