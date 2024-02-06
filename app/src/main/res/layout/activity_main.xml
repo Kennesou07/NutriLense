@@ -234,7 +234,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="10dp"
-
                             android:fontFamily="@font/baloo"
                             android:text="@string/most_viewed"
                             android:textAllCaps="true"
@@ -242,6 +241,7 @@
                             android:textSize="20sp" />
 
                         <TextView
+                            android:visibility="gone"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentRight="true"

@@ -144,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         productsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // TODO SHOW A LIST OF PRODUCTS
+
             }
         });
 
