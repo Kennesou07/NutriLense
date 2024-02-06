@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,9 +49,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.nutrivision.bscs.capstone.detection.adapter.CategoriesAdapter;
+import org.nutrivision.bscs.capstone.detection.adapter.CategoriesClass;
 import org.nutrivision.bscs.capstone.detection.adapter.FeaturedAdapter;
 import org.nutrivision.bscs.capstone.detection.adapter.FeaturedClass;
 import org.nutrivision.bscs.capstone.detection.adapter.mostViewedProductsAdapter;
@@ -61,22 +65,23 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private Questions questionBank;
-    RecyclerView featuredRecycler,mostViewedRecycler;
+    RecyclerView featuredRecycler,mostViewedRecycler,categoriesRecycler;
     RecyclerView.Adapter adapterModel,adapterMostViewed,adapterCategories;
-    ImageView imgIcon;
+    ImageView imgIcon,imgBtn;
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
     GoogleSignInOptions gso;
     GoogleSignInClient gsc;
     static final float END_SCALE = 0.7f;
-    LinearLayout contentView;
-    TextView txtQuestionNo, txtQuestion,txtDesc,txtTitle;
+    LinearLayout contentView,realTimeBtn, selectImgBtn, productsBtn;
+    TextView txtQuestionNo, txtQuestion,txtDesc,txtTitle, viewAllCategories;
     RadioButton radioYes,radioNo;
     RadioGroup radioGroupOptions;
     Button btnNext,done;
     AlertDialog successDialog,endSurveyDialog;
     SharedPreferences preferences;
+    SearchView search;
     boolean isSurveyed;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,13 +96,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         /*-------------------HOOKS---------------*/
         featuredRecycler = findViewById(R.id.featured_recyclerView);
         mostViewedRecycler = findViewById(R.id.most_viewed_recyclerView);
+        categoriesRecycler = findViewById(R.id.category_recyclerView);
         drawerLayout = findViewById(R.id.drawerLayout);
         navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
         contentView = findViewById(R.id.content);
+        realTimeBtn = findViewById(R.id.RealTimeBtn);
+        selectImgBtn = findViewById(R.id.selectImageBtn);
+        productsBtn = findViewById(R.id.ProductsBtn);
+        viewAllCategories = findViewById(R.id.viewAllBtn);
+        search = findViewById(R.id.searchView);
+
         /*----------------TOOLBAR---------------*/
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
+
         /*-------------NAVIGATION DRAWER MENU---------------*/
 //        Menu menu = navigationView.getMenu();
         navigationView.bringToFront();
@@ -116,6 +129,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             String name = acc.getDisplayName();
             String email = acc.getEmail();
         }
+        realTimeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this, DetectorActivity.class));
+            }
+        });
+        selectImgBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this, SelectImage.class));
+            }
+        });
+        productsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // TODO SHOW A LIST OF PRODUCTS
+            }
+        });
+
+        viewAllCategories.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(MainActivity.this,Categories.class));
+            }
+        });
     }
 
     private void Recycler() {
@@ -145,7 +183,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         adapterMostViewed = new mostViewedProductsAdapter(mostViewedProducts);
         mostViewedRecycler.setAdapter(adapterMostViewed);
 
-        GradientDrawable gradient1 = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xffeff400,0xffaff600});
+        /*--------------- CATEGORIES -------------*/
+
+        ArrayList<CategoriesClass> categoriesHelperClasses = new ArrayList<>();
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.vegetable_backdrop, R.drawable.vegetable, "Vegetables",R.string.vegetable_desc));
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.fruit_backdrop, R.drawable.fruit, "Fruits",R.string.fruit_desc));
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.raw_backdrop, R.drawable.raw, "Raw",R.string.raw_desc));
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.processfood_backdrop, R.drawable.processfood, "Processed Foods",R.string.processfoods_desc));
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.snack_backdrop, R.drawable.snack, "Snacks",R.string.snacks_desc));
+        categoriesHelperClasses.add(new CategoriesClass(R.drawable.drinks_backdrop, R.drawable.drinks, "Drinks",R.string.drinks_desc));
+        categoriesRecycler.setHasFixedSize(true);
+        adapterCategories = new CategoriesAdapter(categoriesHelperClasses,this);
+        categoriesRecycler.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        categoriesRecycler.setAdapter(adapterCategories);
     }
 
     @Override
@@ -186,6 +236,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case R.id.nav_select_image:
                 startActivity(new Intent(MainActivity.this, SelectImage.class));
+                break;
+            case R.id.nav_profile:
+                startActivity(new Intent(MainActivity.this, Profile.class));
                 break;
             case R.id.nav_logout:
                 logout();
@@ -309,6 +362,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 params.put("question",currentQuestion);
                 params.put("answer",selectedAnswer);
                 params.put("ID", String.valueOf(ID));
+                params.put("isSurveyed", "true");
                 return params;
             }
         };

@@ -1,29 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recCard"
     android:layout_width="250dp"
     android:layout_height="150dp"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:cardCornerRadius="5dp"
+    android:layout_margin="12sp"
+    app:cardCornerRadius="0dp"
     app:cardElevation="8dp">
 
     <RelativeLayout
+        android:id="@+id/background_gradient"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="15dp"
-        android:background="@color/white">
+        android:background="@drawable/vegetable_backdrop"
+        android:paddingLeft="15dp"
+        android:paddingTop="15dp"
+        android:paddingRight="0dp"
+        android:paddingBottom="15dp">
+
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:text="Vegetables"
-            android:textSize="20sp"
+            android:id="@+id/categories_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:fontFamily="@font/baloo"
-            />
+            android:text="Vegetables"
+            android:textSize="20sp" />
+
         <ImageView
+            android:id="@+id/categories_image"
             android:layout_width="110dp"
             android:layout_height="110dp"
-            android:src="@drawable/sample_image"
+            android:layout_alignParentEnd="true"
             android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
             android:layout_centerVertical="true"
-            android:layout_alignParentBottom="true"/>
+            android:layout_marginRight="-5dp"
+            android:src="@drawable/vegetable" />
+
+        <TextView
+            android:id="@+id/categories_description"
+            android:layout_width="130dp"
+            android:layout_height="match_parent"
+            android:layout_below="@id/categories_title"
+            android:text="description"
+            android:textColor="@color/black"
+            android:textSize="12sp"
+            android:textStyle="italic" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

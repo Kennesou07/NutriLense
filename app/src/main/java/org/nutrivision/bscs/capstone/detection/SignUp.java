@@ -52,8 +52,8 @@ import java.util.Map;
 
 public class SignUp extends Activity {
     TextView titleText;
-    TextInputLayout edtUsernameLayout, edtPasswordLayout,edtRepassLayout,edtNameLayout,edtAgeLayout,edtEmailLayout,edtGenderLayout,edtPhoneLayout;
-    TextInputEditText edtUsername, edtPassword, edtRePass,edtName,edtAge,edtEmail,edtPhone;
+    TextInputLayout edtUsernameLayout, edtPasswordLayout,edtRepassLayout,edtNameLayout,edtAgeLayout,edtEmailLayout,edtGenderLayout,edtPhoneLayout,edtWeightLayout,edtHeightLayout;
+    TextInputEditText edtUsername, edtPassword, edtRePass,edtName,edtAge,edtEmail,edtPhone,edtWeight,edtHeight;
     Button btnSignUp;
     ProgressDialog progressDialog;
     InputMethodManager imm;
@@ -76,6 +76,8 @@ public class SignUp extends Activity {
         edtAge = findViewById(R.id.editTextAge);
         edtEmail = findViewById(R.id.editTextEmail);
         edtPhone = findViewById(R.id.editTextPhone);
+        edtWeight = findViewById(R.id.editTextWeight);
+        edtHeight = findViewById(R.id.editTextHeight);
 
         //  Buttons
         btnSignUp = findViewById(R.id.SignUpBtn);
@@ -91,6 +93,8 @@ public class SignUp extends Activity {
         edtGenderLayout = findViewById(R.id.textInputLayoutGender);
         edtAgeLayout = findViewById(R.id.textInputLayoutAge);
         edtPhoneLayout = findViewById(R.id.textInputLayoutPhone);
+        edtWeightLayout = findViewById(R.id.textInputLayoutWeight);
+        edtHeightLayout = findViewById(R.id.textInputLayoutHeight);
 
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading...");
@@ -304,6 +308,8 @@ public class SignUp extends Activity {
                 final String age = edtAge.getText().toString().trim();
                 final String email = edtEmail.getText().toString().trim();
                 final String phone = edtPhone.getText().toString().trim();
+                final String weight = edtWeight.getText().toString().trim();
+                final String height = edtHeight.getText().toString().trim();
 
                 if(username.isEmpty()){
                     edtUsernameLayout.setHelperText("Required*");
@@ -359,6 +365,20 @@ public class SignUp extends Activity {
                     edtPhone.requestFocus();
                     imm.showSoftInput(edtPhone,InputMethodManager.SHOW_IMPLICIT);
                 }
+                if(weight.isEmpty()){
+                    edtWeightLayout.setHelperText("Required*");
+                    edtWeightLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtWeightLayout.setBoxStrokeColor(Color.RED);
+                    edtWeight.requestFocus();
+                    imm.showSoftInput(edtWeight,InputMethodManager.SHOW_IMPLICIT);
+                }
+                if(height.isEmpty()){
+                    edtHeightLayout.setHelperText("Required*");
+                    edtHeightLayout.setHelperTextColor(ColorStateList.valueOf(Color.RED));
+                    edtHeightLayout.setBoxStrokeColor(Color.RED);
+                    edtHeight.requestFocus();
+                    imm.showSoftInput(edtHeight,InputMethodManager.SHOW_IMPLICIT);
+                }
                 else{
                     if(isPasswordMatch(password,repassword) && isPasswordStrong(password)){
                         StringRequest stringRequest = new StringRequest(Request.Method.POST, SIGNUP_SITE,
@@ -399,6 +419,8 @@ public class SignUp extends Activity {
                                 params.put("Gender",gender);
                                 params.put("Email",email);
                                 params.put("Phone",phone);
+                                params.put("Weight",weight);
+                                params.put("Height",height);
                                 return params;
                             }
                         };

@@ -12,5 +12,7 @@ public class API {
     public static final String GET_ID = SERVER + "getID.php";
     public static final String PRODUCT_DETAILS = SERVER + "product_details.php";
     public static final String HEALTH_CONDITION = SERVER + "health.php";
+    public static final String LOAD_PROFILE = SERVER + "profile.php";
+    public static final String PRODUCT_CATEGORY = SERVER + "category.php";
 
 }

@@ -30,7 +30,17 @@
             android:layout_gravity="center"
             android:textStyle="italic"
             />
-
+        <TextView
+            android:id="@+id/reminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/reminder"
+            android:textSize="12sp"
+            android:textColor="@color/tfe_color_primary"
+            android:layout_gravity="center"
+            android:textStyle="italic"
+            android:visibility="invisible"
+            />
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
@@ -38,10 +48,11 @@
 
         <Button
             android:id="@+id/Done"
-            android:layout_width="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:background="@color/tfe_color_primary_dark"
+            android:background="@drawable/edit_profile_background"
             android:gravity="center"
             android:text="done"
             android:textAlignment="center"

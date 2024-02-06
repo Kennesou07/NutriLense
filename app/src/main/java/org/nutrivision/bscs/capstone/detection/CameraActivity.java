@@ -116,8 +116,6 @@ public abstract class CameraActivity extends AppCompatActivity
   protected void onCreate(final Bundle savedInstanceState) {
     LOGGER.d("onCreate " + this);
     super.onCreate(null);
-    getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
     setContentView(R.layout.tfe_od_activity_camera);
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -651,6 +649,9 @@ public abstract class CameraActivity extends AppCompatActivity
         break;
       case R.id.nav_select_image:
         startActivity(new Intent(CameraActivity.this, SelectImage.class));
+        break;
+      case R.id.nav_profile:
+        startActivity(new Intent(CameraActivity.this, Profile.class));
         break;
       case R.id.nav_logout:
         logout();

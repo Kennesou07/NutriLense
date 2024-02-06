@@ -32,11 +32,19 @@
     <string name="featured_model_desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</string>
     <string name="healthy">Wow! you look great, healthy and strong. Maintain your diet!</string>
     <string name="unhealthy">Don\'t worry we can still fix this by maintaining. Start your Journey now.</string>
+    <string name="reminder">Health Reminder: Consuming more than 1 serving might affect your health condition.</string>
+    <string name="vegetable_desc">  is any plant, part of which is used for food (e.g, Cabbage, Bokchoy, Bell Pepper, etc.,)</string>
+    <string name="fruit_desc">   the usually edible reproductive body of a seed plant. (e.g, Orange, Banana, Apple, etc.,)</string>
+    <string name="raw_desc">    food that is eaten uncooked, that has not yet been cooked (e.g, Meat, Fish, Chicken, etc.,)</string>
+    <string name="processfoods_desc">   any food that has been altered in some way during preparation (e.g, Longganiza, Tocino, Hotdogs, etc.,)</string>
+    <string name="snacks_desc"> a light meal :food eaten between regular meals. (e.g, Junk Foods, Sandwhich, Crackers, etc.,)</string>
+    <string name="drinks_desc"> a liquid that can be swallowed as refreshment or nourishment. (e.g, Water, Coke, Beer, etc.,)</string>
 
     <!--Buttons-->
     <string name="skip_btn">Skip</string>
     <string name="next_btn">Next</string>
     <string name="lets_get_started">Let\'s Get Started! </string>
+    <string name="see_all">See all </string>
 
     <!--General Menu Names-->
     <string name="home">HOME</string>

@@ -103,6 +103,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     private DetectedObjectsAdapter detectedObjectsAdapter;
     private String prodName;
     private List<NutritionItem> nutritionItemList = new ArrayList<>();
+    private double avgCalorie = 2000.00; // kcal unit
 
     @Override
     public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -171,7 +172,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String objectName) {
-                Toast.makeText(DetectorActivity.this,"Clicked: " + objectName,Toast.LENGTH_SHORT).show();
+                Toast.makeText(DetectorActivity.this, "Clicked: " + objectName, Toast.LENGTH_SHORT).show();
                 Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
                 displayInformation(objectName);
             }
@@ -214,8 +215,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 if (detector == null) {
                     return;
                 }
-            }
-            catch(IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 LOGGER.e(e, "Exception in updateActiveModel()");
                 Toast toast =
@@ -360,10 +360,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     protected void setNumThreads(final int numThreads) {
         runInBackground(() -> detector.setNumThreads(numThreads));
     }
+
     private void displayInformation(String objectName) {
         prodName = objectName;
-        SharedPreferences getID = getSharedPreferences("LogInSession",MODE_PRIVATE);
-        int ID = getID.getInt("userId",0);
+        SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
+        int ID = getID.getInt("userId", 0);
         StringRequest stringRequest = new StringRequest(Request.Method.POST, PRODUCT_DETAILS,
                 new Response.Listener<String>() {
                     @Override
@@ -398,9 +399,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                                 Log.d("NutritionInfo", key + ": " + value);
                                             }
                                         }
-                                        checkHealthCondition(ID,nutritionItemList);
+                                        checkHealthCondition(ID, nutritionItemList);
                                         // Update your UI or perform other actions with the retrieved data
-                                       // updateRecyclerView(nutritionItemList,false,null,null);
+                                        // updateRecyclerView(nutritionItemList,false,null,null);
                                     } else {
                                         // Handle the case where the status is not "success"
                                         String message = jsonObject.getString("message");
@@ -437,46 +438,62 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         RequestQueue queue = Volley.newRequestQueue(DetectorActivity.this);
         queue.add(stringRequest);
     }
+
+    private AlertDialog productDialog;
+
     private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String triggeringCondition, String highIn) {
-        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View dialogView = inflater.inflate(R.layout.inflater_product_details,null);
-        RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
-        TextView productName = dialogView.findViewById(R.id.ProductName);
-        Button btnDone = dialogView.findViewById(R.id.Done);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        productName.setText(prodName);
-        // Create an adapter for the RecyclerView
-        NutritionAdapter adapter = new NutritionAdapter(nutritionItemList);
-        recyclerView.setAdapter(adapter);
+        if (productDialog == null) {
+            LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            View dialogView = inflater.inflate(R.layout.inflater_product_details, null);
+            RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
+            TextView productName = dialogView.findViewById(R.id.ProductName);
+            Button btnDone = dialogView.findViewById(R.id.Done);
+            recyclerView.setLayoutManager(new LinearLayoutManager(this));
+            productName.setText(prodName);
+            // Create an adapter for the RecyclerView
+            NutritionAdapter adapter = new NutritionAdapter(nutritionItemList);
+            recyclerView.setAdapter(adapter);
 
-        // Update the color of the product name based on health condition
-        if (isSafeToConsume) {
-            productName.setTextColor(getResources().getColor(R.color.green)); // Set color to green
+            // Update the color of the product name based on health condition
+            if (isSafeToConsume) {
+                productName.setTextColor(getResources().getColor(R.color.green)); // Set color to green
 
-            // Add a note under the product name
-            TextView noteTextView = dialogView.findViewById(R.id.Note);
-            noteTextView.setText("This food is safe to consume.");
+                // Add a note under the product name
+                TextView noteTextView = dialogView.findViewById(R.id.Note);
+                noteTextView.setText("This food is safe to consume.");
+                noteTextView.setTextColor(getResources().getColor(R.color.green));
+                noteTextView.setBackgroundColor(getResources().getColor(R.color.black));
+                TextView reminderTextView = dialogView.findViewById(R.id.reminder);
+                reminderTextView.setVisibility(View.VISIBLE);
 
-        } else {
-            productName.setTextColor(getResources().getColor(R.color.red)); // Set color to red
+            } else {
+                productName.setTextColor(getResources().getColor(R.color.red)); // Set color to red
 
-            // Display a warning based on the triggering health condition
-            String warningMessage = "This food is high in " +highIn+ " might trigger " + triggeringCondition + ".";
-            // Add a warning under the product name
-            TextView warningTextView = dialogView.findViewById(R.id.Note);
-            warningTextView.setText(warningMessage);
+                // Display a warning based on the triggering health condition
+                String warningMessage = "Warning: This food is high in " + highIn + " might trigger " + triggeringCondition + ".";
+                // Add a warning under the product name
+                TextView warningTextView = dialogView.findViewById(R.id.Note);
+                warningTextView.setText(warningMessage);
+                warningTextView.setTextColor(getResources().getColor(R.color.warning));
+                warningTextView.setBackgroundColor(getResources().getColor(R.color.black));
+            }
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setView(dialogView);
+            productDialog = builder.create();
+            Animation sideAnim = AnimationUtils.loadAnimation(this, R.anim.side_animation);
+            dialogView.setAnimation(sideAnim);
+            btnDone.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    productDialog.dismiss();
+                }
+            });
+            productDialog.show();
         }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(dialogView);
-        final AlertDialog productDialog = builder.create();
-        Animation sideAnim = AnimationUtils.loadAnimation(this,R.anim.side_animation);
-        dialogView.setAnimation(sideAnim);
-
-        productDialog.show();
-        btnDone.setOnClickListener(view -> productDialog.dismiss());
     }
-    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList){
+
+    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, HEALTH_CONDITION,
                 new Response.Listener<String>() {
                     @Override
@@ -523,7 +540,15 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                         if (isHighBlood) {
                                             analyzeForHighBloodPressure(nutritionItemList);
                                         }
-                                        else{
+                                        if (hasHeartProblem) {
+                                            analyzeForHeartProblem(nutritionItemList);
+                                        }
+                                        if (hasKidneyProblem) {
+                                            analyzeForKidneyProblem(nutritionItemList);
+                                        }
+                                        if (isObese) {
+                                            analyzeForObese(nutritionItemList);
+                                        } else {
 
                                         }
                                         //updateRecyclerView(nutritionItemList, true, allTriggers,"");
@@ -563,30 +588,40 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         RequestQueue queue = Volley.newRequestQueue(DetectorActivity.this);
         queue.add(stringRequest);
     }
+
     private void analyzeForDiabetes(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
-        double totalCalories = 0;
         String triggerConditions = "";
         List<String> triggerCondition = new ArrayList<>();
         List<String> highIn = new ArrayList<>();
+        double servingSize = 0;
+        // Find the serving size in the nutritionItemList
+        for (NutritionItem item : nutritionItemList) {
+            if ("No.Servings".equals(item.getLabel())) {
+                servingSize = extractNumericValue(item.getValue());
+                break;  // Exit the loop once the serving size is found
+            }
+        }
         for (NutritionItem item : nutritionItemList) {
             String key = item.getLabel();
             double value = extractNumericValue(item.getValue());
 
             switch (key) {
-                case "Calories":
-                    totalCalories = value;
-                    double caloriesSafeRange = 2000;
-                    if (totalCalories > caloriesSafeRange) {
+                case "Saturated Fat":
+                    double diabetesSatFatsLimit = 10; // %
+                    double satFat = (diabetesSatFatsLimit / 100) * avgCalorie; // kcal
+                    double satFatSafeRange = satFat / 9; // grams
+                    double satFatsValue = value * servingSize;
+                    if (satFatsValue > satFatSafeRange) {
                         triggerCondition.add("diabetes");
-                        highIn.add("calories");
+                        highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
                     break;
-
                 case "Total Carbohydrate":
-                    double maxCarbohydrates = 60; //60g
-                    if (value > maxCarbohydrates) {
+                    double maxCarbohydrates = 60; // 60g
+                    double carbohydrateValue = value * servingSize;
+                    if (carbohydrateValue > maxCarbohydrates) {
                         triggerCondition.add("diabetes");
                         highIn.add("carbohydrates");
                         safeToConsume = false;
@@ -594,24 +629,20 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     break;
 
                 case "Added Sugar":
-                    double sugarSafeRange = 25; //25g
-                    if (value > sugarSafeRange) {
+                case "Sugar":
+                    double addedSugarSafeRange = 25; //25g
+                    double addedSugarValue = value * servingSize;
+                    if (addedSugarValue > addedSugarSafeRange) {
                         triggerCondition.add("diabetes");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
                     break;
-                case "Dietary Fiber":
-                    double fiberSafeRange = 25; //25g
-                    if(value > fiberSafeRange){
-                        triggerCondition.add("diabetes");
-                        highIn.add("fiber");
-                        safeToConsume = false;
-                    }
-                    break;
+
                 case "Sodium":
                     double sodiumSafeRange = 1500; //1500mg
-                    if(value > sodiumSafeRange){
+                    double sodiumValue = value * servingSize;
+                    if (sodiumValue > sodiumSafeRange) {
                         triggerCondition.add("diabetes");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
@@ -621,18 +652,327 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     break;
             }
         }
-        if(triggerCondition.contains("diabetes")){
+        if (triggerCondition.contains("diabetes")) {
             triggerConditions = triggerCondition.toString();
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList,safeToConsume,triggerConditions,allhighIn);
-        Log.e("Trigger","Trigger List: "+ triggerConditions);
-        Log.e("Trigger","high in List: "+ allhighIn);
-        Log.e("Trigger","Safe to Consume?: "+ safeToConsume);
-    }
-    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
+        updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
+        Log.e("Trigger", "Trigger List: " + triggerConditions);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
 
     }
+
+    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
+        boolean safeToConsume = true;
+        List<String> triggerCondition = new ArrayList<>();
+        List<String> highIn = new ArrayList<>();
+        String triggerConditions = "";
+        double servingSize = 0;
+        for (NutritionItem item : nutritionItemList) {
+            if ("No.Servings".equals(item.getLabel())) {
+                servingSize = extractNumericValue(item.getValue());
+                break;  // Exit the loop once the serving size is found
+            }
+        }
+        for (NutritionItem item : nutritionItemList) {
+            String key = item.getLabel();
+            double value = extractNumericValue(item.getValue());
+            switch (key) {
+                case "Category":
+                    if (key == "Alcohol") {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("Alcohol");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Total Fat":
+                    double highBloodTotalFatLimit = 10; //%
+                    double totalFat = (highBloodTotalFatLimit / 100) * avgCalorie;
+                    double totalFatSafeRange = totalFat / 9;
+                    double totalFatValue = value * servingSize;
+                    if (totalFatValue > totalFatSafeRange) {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("Fat");
+                        safeToConsume = false;
+                    }
+                case "Saturated Fat":
+                    double highBloodSatFatsLimit = 10; // %
+                    double satFat = (highBloodSatFatsLimit / 100) * avgCalorie; // kcal
+                    double satFatSafeRange = satFat / 9; // grams
+                    double satFatsValue = value * servingSize;
+                    if (satFatsValue > satFatSafeRange) {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("Saturated Fats");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Total Carbohydrate":
+                    double maxCarbohydrates = 60; //60g
+                    double carbohydratesValue = value * servingSize;
+                    if (carbohydratesValue > maxCarbohydrates) {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("carbohydrates");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Added Sugar":
+                case "Sugar":
+                    double sugarSafeRange = 25; //25g
+                    double sugarValue = value * servingSize;
+                    if (sugarValue > sugarSafeRange) {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("added sugar");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Sodium":
+                    double sodiumSafeRange = 1500; //1500mg
+                    double sodiumValue = value * servingSize;
+                    if (sodiumValue > sodiumSafeRange) {
+                        triggerCondition.add("High Blood / Hypertension");
+                        highIn.add("salt/sodium");
+                        safeToConsume = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            if (triggerCondition.contains("High Blood / Hypertension")) {
+                triggerConditions = triggerCondition.toString();
+            }
+            String allhighIn = TextUtils.join(", ", highIn);
+            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
+            Log.e("Trigger", "Trigger List: " + triggerConditions);
+            Log.e("Trigger", "high in List: " + allhighIn);
+            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+            Log.e("Trigger", "No. of servings: " + servingSize);
+
+        }
+    }
+
+    private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList) {
+        boolean safeToConsume = true;
+        List<String> triggerCondition = new ArrayList<>();
+        List<String> highIn = new ArrayList<>();
+        String triggerConditions = "";
+        double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
+
+        // Find the serving size in the nutritionItemList
+        for (NutritionItem item : nutritionItemList) {
+            if ("No.Servings".equals(item.getLabel())) {
+                servingSize = extractNumericValue(item.getValue());
+                break;  // Exit the loop once the serving size is found
+            }
+        }
+
+        for (NutritionItem item : nutritionItemList) {
+            String key = item.getLabel();
+            double value = extractNumericValue(item.getValue());
+
+            switch (key) {
+                case "Saturated Fat":
+                    double heartDiseaseSatFatsLimit = 7; // %
+                    double satFat = (heartDiseaseSatFatsLimit / 100) * avgCalorie; // kcal
+                    double satFatSafeRange = satFat / 9; // grams
+                    double satFatsValue = value * servingSize;
+                    if (satFatsValue > satFatSafeRange) {
+                        triggerCondition.add("Heart Problem");
+                        highIn.add("Saturated Fats");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Added Sugar":
+                    double sugarSafeRange = 25; //25g
+                    double sugarValue = value * servingSize;
+                    if (sugarValue > sugarSafeRange) {
+                        triggerCondition.add("Heart Problem");
+                        highIn.add("added sugar");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Sodium":
+                    double sodiumSafeRange = 1500; //1500mg
+                    double sodiumValue = value * servingSize;
+                    if (sodiumValue > sodiumSafeRange) {
+                        triggerCondition.add("Heart Problem");
+                        highIn.add("salt/sodium");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "TransFat":
+                    double transFatRange = 0; // 0 Consume is safe
+                    double transFatValue = value * servingSize;
+                    if (transFatRange > transFatRange) {
+                        triggerCondition.add("Heart problem");
+                        highIn.add("trans fat");
+                        safeToConsume = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            if (triggerCondition.contains("Heart problem")) {
+                triggerConditions = triggerCondition.toString();
+            }
+            String allhighIn = TextUtils.join(", ", highIn);
+            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
+
+            Log.e("Trigger", "Trigger List: " + triggerConditions);
+            Log.e("Trigger", "high in List: " + allhighIn);
+            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+            Log.e("Trigger", "No. of servings: " + servingSize);
+        }
+    }
+
+    private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList) {
+        boolean safeToConsume = true;
+        List<String> triggerCondition = new ArrayList<>();
+        List<String> highIn = new ArrayList<>();
+        String triggerConditions = "";
+        double servingSize = 0;
+        for (NutritionItem item : nutritionItemList) {
+            if ("No.Servings".equals(item.getLabel())) {
+                servingSize = extractNumericValue(item.getValue());
+                break;  // Exit the loop once the serving size is found
+            }
+        }
+        for (NutritionItem item : nutritionItemList) {
+            String key = item.getLabel();
+            double value = extractNumericValue(item.getValue());
+            switch (key) {
+                case "Sodium":
+                    double sodiumSafeRange = 1500; //1500mg
+                    double sodiumValue = value * servingSize;
+                    if (sodiumValue > sodiumSafeRange) {
+                        triggerCondition.add("kidney problem");
+                        highIn.add("sodium");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Potassium":
+                    double potassiumSafeRange = 2500; // mg
+                    double potassiumValue = value * servingSize;
+                    if (potassiumValue > potassiumSafeRange) {
+                        triggerCondition.add("kidney problem");
+                        highIn.add("potassium");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Phosphorus":
+                    double phosphorousSafeRange = 800; // mg
+                    double phosphorousValue = value * servingSize;
+                    if (phosphorousValue > phosphorousValue) {
+                        triggerCondition.add("kidney problem");
+                        highIn.add("potassium");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Protein":
+                    double proteinSafeRange = 0.8; // grams
+                    //TODO FETCH WEIGHT OF THE PERSON AND DIVIDE IT TO THE WEIGHT OF PERSON IT SHOULD BE 0.8 GRAMS PER KILOGRAM OF BODY
+                    break;
+                case "Calcium":
+                    double calciumSafeRange = 1000; //mg
+                    double calciumValue = value * servingSize;
+                    if (calciumValue > calciumSafeRange) {
+                        triggerCondition.add("kidney problem");
+                        highIn.add("calcium");
+                        safeToConsume = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void analyzeForObese(List<NutritionItem> nutritionItemList) {
+        boolean safeToConsume = true;
+        List<String> triggerCondition = new ArrayList<>();
+        List<String> highIn = new ArrayList<>();
+        String triggerConditions = "";
+        double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
+
+        // Find the serving size in the nutritionItemList
+        for (NutritionItem item : nutritionItemList) {
+            if ("No.Servings".equals(item.getLabel())) {
+                servingSize = extractNumericValue(item.getValue());
+                break;  // Exit the loop once the serving size is found
+            }
+        }
+
+        for (NutritionItem item : nutritionItemList) {
+            String key = item.getLabel();
+            double value = extractNumericValue(item.getValue());
+
+            switch (key) {
+                case "Calories":
+                    double calorieSafeRange = 1000; // kcal
+                    double calorieValue = value * servingSize;
+                    if (calorieValue > calorieSafeRange) {
+                        triggerCondition.add("Obesity");
+                        highIn.add("Saturated Fats");
+                        safeToConsume = false;
+                    }
+                    break;
+
+                case "Saturated Fat":
+                    double obeseSatFatsLimit = 6; // %
+                    double satFat = (obeseSatFatsLimit / 100) * avgCalorie; // kcal
+                    double satFatSafeRange = satFat / 9; // grams
+                    double satFatsValue = value * servingSize;
+                    if (satFatsValue > satFatSafeRange) {
+                        triggerCondition.add("Obesity");
+                        highIn.add("Saturated Fats");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Sugar":
+                case "Added Sugar":
+                    double sugarSafeRange = 25; //25g
+                    double sugarValue = value * servingSize;
+                    if (sugarValue > sugarSafeRange) {
+                        triggerCondition.add("Obesity");
+                        highIn.add("added sugar");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "Sodium":
+                    double sodiumSafeRange = 1500; //1500mg
+                    double sodiumValue = value * servingSize;
+                    if (sodiumValue > sodiumSafeRange) {
+                        triggerCondition.add("Obesity");
+                        highIn.add("salt/sodium");
+                        safeToConsume = false;
+                    }
+                    break;
+                case "TransFat":
+                    double transFatRange = 0; // 0 Consume is safe
+                    double transFatValue = value * servingSize;
+                    if (transFatRange > transFatRange) {
+                        triggerCondition.add("Obesity");
+                        highIn.add("trans fat");
+                        safeToConsume = false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            if (triggerCondition.contains("Heart problem")) {
+                triggerConditions = triggerCondition.toString();
+            }
+            String allhighIn = TextUtils.join(", ", highIn);
+            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
+
+            Log.e("Trigger", "Trigger List: " + triggerConditions);
+            Log.e("Trigger", "high in List: " + allhighIn);
+            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+            Log.e("Trigger", "No. of servings: " + servingSize);
+        }
+    }
+
     private double extractNumericValue(String input) {
         // Assuming the input is in the format "123mg" or "456g" etc.
         String numericValue = input.replaceAll("[^\\d.]+", "");

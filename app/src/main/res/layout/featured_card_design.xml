@@ -16,7 +16,7 @@
             android:id="@+id/featured_imgView"
             android:layout_width="match_parent"
             android:layout_height="140dp"
-            android:src="@color/control_background"
+            android:src="@color/colorAccent"
             android:scaleType="centerCrop"
             />
 

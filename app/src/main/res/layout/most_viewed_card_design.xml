@@ -9,7 +9,6 @@
         android:layout_width="300dp"
         android:padding="10dp"
         android:layout_height="150dp"
-        android:background="@color/white"
         >
         <ImageView
             android:id="@+id/most_viewed_img"
