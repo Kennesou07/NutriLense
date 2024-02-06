@@ -2,6 +2,7 @@ package org.nutrivision.bscs.capstone.detection;
 
 import static android.widget.Toast.LENGTH_SHORT;
 import static org.nutrivision.bscs.capstone.detection.API.GET_ID;
+import static org.nutrivision.bscs.capstone.detection.API.HEALTH_CONDITION;
 import static org.nutrivision.bscs.capstone.detection.API.SURVEY_SITE;
 
 import android.app.AlertDialog;
@@ -82,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     AlertDialog successDialog,endSurveyDialog;
     SharedPreferences preferences;
     SearchView search;
+    int userId;
     boolean isSurveyed;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,10 +91,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
         preferences = getSharedPreferences("LogInSession", MODE_PRIVATE);
         isSurveyed = preferences.getBoolean("isSurveyed",false);
-        getID();
-        if(!isSurveyed){
-            showSurvey();
-        }
+
+
         /*-------------------HOOKS---------------*/
         featuredRecycler = findViewById(R.id.featured_recyclerView);
         mostViewedRecycler = findViewById(R.id.most_viewed_recyclerView);
@@ -154,6 +154,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 startActivity(new Intent(MainActivity.this,Categories.class));
             }
         });
+        getID();
+
     }
 
     private void Recycler() {
@@ -299,6 +301,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         int questionSize = questionBank.getQuestionSize();
         txtQuestionNo.setText(String.format(Locale.getDefault(), "%d / %d", currentPos, questionSize));
     }
+    HashMap<String, String> userAnswers = new HashMap<>();
 
     private void onNextButtonClick(){
         SharedPreferences getID = getSharedPreferences("LogInSession",MODE_PRIVATE);
@@ -310,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         String currentQuestion = questionBank.getCurrentQuestion();
         // Save the answer to the current question
         String selectedAnswer = radioYes.isChecked() ? "Yes" : "No";
+        userAnswers.put(currentQuestion, selectedAnswer); // Store the answer with question ID
         Log.d("SurveyData", "Question: " + currentQuestion + ", Answer: " + selectedAnswer);
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, SURVEY_SITE,
@@ -386,6 +390,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             onNextInflater();
         }
     }
+
     private void onDoneButtonClick(){
         endSurveyDialog.dismiss();
     }
@@ -401,8 +406,34 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         done = endSurveyView.findViewById(R.id.btnDone);
         Animation popAnim = AnimationUtils.loadAnimation(this,R.anim.pop_animation);
         endSurveyView.setAnimation(popAnim);
+        // Recaps all answers and counts the number of "No" answers
+        int noCount = recapAnswers();
+
+        // If the number of "No" answers is equal to 5, modify text and photo
+        if (noCount != 5) {
+            ifNotHealthy();
+        }
+
         done.setOnClickListener(v -> onDoneButtonClick());
         endSurveyDialog.show();
+    }
+    private int recapAnswers() {
+        int noCount = 0;
+        for (String answer : userAnswers.values()) {
+            if (answer.equals("No")) {
+                noCount++;
+            }
+        }
+        Log.d("SurveyData", "Number of No Answers: " + noCount);
+        // Display or handle the count as needed
+        return noCount;
+    }
+    // Function to modify text and photo for other cases
+    private void ifNotHealthy() {
+        txtTitle.setText("Unhealthy");
+        txtTitle.setTextSize(16);
+        txtDesc.setText(R.string.unhealthy);
+        imgIcon.setImageResource(R.drawable.unhealthy_icon);
     }
     private void getID() {
         SharedPreferences getID = getSharedPreferences("LogInSession",MODE_PRIVATE);
@@ -416,7 +447,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             String result = object.getString("status");
                             if (result.equals("success")) {
                                 // Get the user ID from the response
-                                int userId = object.getInt("userId");
+                                userId = object.getInt("userId");
 
                                 // Save session information
                                 SharedPreferences preferences = getSharedPreferences("LogInSession", MODE_PRIVATE);
@@ -428,6 +459,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                                 for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
                                     Log.d("SharedPreferences", entry.getKey() + ": " + entry.getValue().toString());
                                 }
+                                fetchIfSurvey();
                             } else {
                                 Toast.makeText(MainActivity.this, "Cannot fetch ID!", LENGTH_SHORT).show();
                             }
@@ -453,6 +485,54 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
         RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
+        queue.add(stringRequest);
+    }
+    private void fetchIfSurvey() {
+        SharedPreferences getID = getSharedPreferences("LogInSession",MODE_PRIVATE);
+        int ID = getID.getInt("userId",0);
+        Log.d("SURVEY","ID:" + ID);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, HEALTH_CONDITION,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject jsonObject = new JSONObject(response);
+                            String result = jsonObject.getString("status");
+
+                            if (result.equals("no_record")) {
+                                // User does not have a record in the database, show the survey
+                                showSurvey();
+                                Log.d("SURVEY","this should not been called.");
+                            } else if (result.equals("success")) {
+                                Log.d("SURVEY","this has been called.");
+                            } else {
+                                // Handle other cases if needed
+                            }
+                        } catch (JSONException e) {
+                            Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(ID));
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(
+                10000, // Timeout in milliseconds
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(stringRequest);
     }
 }
