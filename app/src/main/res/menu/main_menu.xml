@@ -35,9 +35,9 @@
                 android:icon="@drawable/baseline_share_24"
                 android:title="Share" />
             <item
-                android:id="@+id/nav_rate"
+                android:id="@+id/nav_feedback"
                 android:icon="@drawable/rate_us_icon"
-                android:title="Rate Us" />
+                android:title="Feedback" />
             <item
                 android:id="@+id/nav_about"
                 android:icon="@drawable/baseline_info_24"

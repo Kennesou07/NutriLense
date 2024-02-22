@@ -191,6 +191,12 @@ public class Profile extends AppCompatActivity implements NavigationView.OnNavig
             case R.id.nav_logout:
                 logout();
                 break;
+            case R.id.nav_share:
+                break;
+            case R.id.nav_feedback:
+                break;
+            case R.id.nav_about:
+                break;
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;

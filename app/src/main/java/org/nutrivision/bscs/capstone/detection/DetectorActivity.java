@@ -487,6 +487,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 @Override
                 public void onClick(View view) {
                     productDialog.dismiss();
+                    productDialog = null;
                 }
             });
             productDialog.show();
@@ -540,16 +541,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                         if (isHighBlood) {
                                             analyzeForHighBloodPressure(nutritionItemList);
                                         }
+
                                         if (hasHeartProblem) {
                                             analyzeForHeartProblem(nutritionItemList);
                                         }
+
                                         if (hasKidneyProblem) {
                                             analyzeForKidneyProblem(nutritionItemList);
                                         }
+
                                         if (isObese) {
                                             analyzeForObese(nutritionItemList);
-                                        } else {
-
                                         }
                                         //updateRecyclerView(nutritionItemList, true, allTriggers,"");
                                     } else {
@@ -885,6 +887,16 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 default:
                     break;
             }
+            if (triggerCondition.contains("kidney problem")) {
+                triggerConditions = triggerCondition.toString();
+            }
+            String allhighIn = TextUtils.join(", ", highIn);
+            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
+
+            Log.e("Trigger", "Trigger List: " + triggerConditions);
+            Log.e("Trigger", "high in List: " + allhighIn);
+            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+            Log.e("Trigger", "No. of servings: " + servingSize);
         }
     }
 

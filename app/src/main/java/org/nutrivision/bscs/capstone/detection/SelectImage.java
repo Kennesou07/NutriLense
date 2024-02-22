@@ -387,13 +387,17 @@ public class SelectImage extends AppCompatActivity implements
             case R.id.nav_logout:
                 logout();
                 break;
+            case R.id.nav_share:
+                break;
+            case R.id.nav_feedback:
+                break;
+            case R.id.nav_about:
+                break;
         }
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
     private void animateNavigationDrawer() {
-        //Add any color or remove it to use the default one!
-        //To make it transparent use Color.Transparent in side setScrimColor();
         drawerLayout.setScrimColor(getResources().getColor(R.color.tfe_color_primary_dark));
         drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
@@ -536,6 +540,7 @@ public class SelectImage extends AppCompatActivity implements
                 @Override
                 public void onClick(View view) {
                     productDialog.dismiss();
+                    productDialog = null;
                 }
             });
             productDialog.show();
@@ -598,7 +603,7 @@ public class SelectImage extends AppCompatActivity implements
                                         if (isObese) {
                                             analyzeForObese(nutritionItemList);
                                         } else {
-
+                                            updateRecyclerView(nutritionItemList, true, "", "");
                                         }
                                         //updateRecyclerView(nutritionItemList, true, allTriggers,"");
                                     } else {

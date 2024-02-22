@@ -6,7 +6,8 @@
     android:layout_height="150dp"
     android:layout_margin="12sp"
     app:cardCornerRadius="0dp"
-    app:cardElevation="8dp">
+    app:cardElevation="8dp"
+    android:background="@color/lightWhite">
 
     <RelativeLayout
         android:id="@+id/background_gradient"

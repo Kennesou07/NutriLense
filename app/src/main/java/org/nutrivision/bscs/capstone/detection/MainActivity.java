@@ -1,6 +1,7 @@
 package org.nutrivision.bscs.capstone.detection;
 
 import static android.widget.Toast.LENGTH_SHORT;
+import static org.nutrivision.bscs.capstone.detection.API.FEEDBACK;
 import static org.nutrivision.bscs.capstone.detection.API.GET_ID;
 import static org.nutrivision.bscs.capstone.detection.API.HEALTH_CONDITION;
 import static org.nutrivision.bscs.capstone.detection.API.SURVEY_SITE;
@@ -22,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,6 +63,7 @@ import org.nutrivision.bscs.capstone.detection.adapter.FeaturedClass;
 import org.nutrivision.bscs.capstone.detection.adapter.mostViewedProductsAdapter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -83,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     AlertDialog successDialog,endSurveyDialog;
     SharedPreferences preferences;
     SearchView search;
+    AlertDialog feedbackDialog;
     int userId;
     boolean isSurveyed;
     @Override
@@ -244,6 +248,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case R.id.nav_logout:
                 logout();
+                break;
+            case R.id.nav_share:
+                break;
+            case R.id.nav_feedback:
+                showFeedback();
+                break;
+            case R.id.nav_about:
                 break;
         }
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -533,6 +544,87 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(stringRequest);
+    }
+    private void showFeedback(){
+        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = layoutInflater.inflate(R.layout.inflater_feedback,null);
+        RatingBar rating = dialogView.findViewById(R.id.ratingbar);
+        float ratings = rating.getRating();
+        TextInputEditText feedback = dialogView.findViewById(R.id.etFeedback);
+        String feedbacks = feedback.getText().toString().trim();
+        Button submit = dialogView.findViewById(R.id.submitBtn);
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setView(dialogView);
+        feedbackDialog = alertDialog.create();
+        Animation popAnim = AnimationUtils.loadAnimation(this, R.anim.pop_animation);
+        dialogView.setAnimation(popAnim);
+        submit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                feedbackDialog.dismiss();
+                sendFeedback(feedbacks,ratings);
+            }
+        });
+        feedbackDialog.show();
+    }
+    private void sendFeedback(String feedback, float rating){
+        SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
+        int ID = getID.getInt("userId", 0);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, FEEDBACK,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Log.d("RawResponse", response); // Print the raw response
+
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Proceed with parsing as JSON
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String result = jsonObject.getString("status");
+
+                                    if (result.equals("success")) {
+                                        Toast.makeText(MainActivity.this, "Thank you for your feedback!", LENGTH_SHORT).show();
+                                        feedbackDialog.dismiss();
+                                    } else {
+                                        Toast.makeText(MainActivity.this, "Try Again.", LENGTH_SHORT).show();
+                                        feedbackDialog.show();
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(ID));
+                params.put("Feedback", feedback);
+                params.put("Rating", String.valueOf(rating));
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
         queue.add(stringRequest);
     }
 }

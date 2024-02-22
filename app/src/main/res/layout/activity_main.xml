@@ -58,23 +58,23 @@
                         android:text="@string/dashboard_title"
                         android:textSize="24sp" />
 
-                        <SearchView
-                            android:id="@+id/searchView"
-                            android:elevation="8dp"
-                            android:layout_below="@id/dashboard_title"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginRight="25dp"
-                            android:layout_marginLeft="25dp"
-                            android:layout_marginBottom="10dp"
-                            android:layout_marginTop="10dp"
-                            android:background="@drawable/search_bkg"
-                            android:focusable="false"
-                            app:closeIcon="@drawable/clear_icon"
-                            app:iconifiedByDefault="true"
-                            app:queryHint="Search..."
-                            app:searchHintIcon="@null"
-                            app:searchIcon="@drawable/search_icon" />
+                    <SearchView
+                        android:id="@+id/searchView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/dashboard_title"
+                        android:layout_marginStart="25dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="25dp"
+                        android:layout_marginBottom="10dp"
+                        android:background="@drawable/search_bkg"
+                        android:elevation="8dp"
+                        android:focusable="false"
+                        app:closeIcon="@drawable/clear_icon"
+                        app:iconifiedByDefault="true"
+                        app:queryHint="Search..."
+                        app:searchHintIcon="@null"
+                        app:searchIcon="@drawable/search_icon" />
 
 
                 </RelativeLayout>
@@ -241,12 +241,12 @@
                             android:textSize="20sp" />
 
                         <TextView
-                            android:visibility="gone"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentRight="true"
                             android:layout_centerVertical="true"
-                            android:text="@string/view_all" />
+                            android:text="@string/view_all"
+                            android:visibility="gone" />
                     </RelativeLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
