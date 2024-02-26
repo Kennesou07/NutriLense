@@ -29,7 +29,7 @@
     <string name="network_error_desc">Please connect to the internet.</string>
     <string name="navigation_open">Open navigation drawer</string>
     <string name="navigation_close">Close navigation drawer</string>
-    <string name="featured_model_desc">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</string>
+    <string name="featured_model_desc">These model is a deep learning algorithm utilized within our app for real-time object detection and recognition. By analyzing input images or video streams, Models quickly and accurately identifies various objects and their locations within the scene, providing crucial information for enhancing user experiences.</string>
     <string name="healthy">Wow! you look great, healthy and strong. Maintain your diet!</string>
     <string name="unhealthy">Don\'t worry we can still fix this by maintaining. Start your Journey now.</string>
     <string name="reminder">Health Reminder: Consuming more than 1 serving might affect your health condition.</string>

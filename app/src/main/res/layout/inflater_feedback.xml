@@ -9,7 +9,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/search_bkg"
+        android:background="@color/transparent"
         android:orientation="vertical"
         android:padding="20dp">
 
@@ -29,15 +29,6 @@
                 android:textColor="@color/black"
                 android:textSize="20sp"
                 android:textStyle="bold" />
-
-            <RatingBar
-                android:id="@+id/ratingbar"
-                style="@style/Widget.AppCompat.RatingBar.Small"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="20dp"
-                android:layout_gravity="center_vertical"
-                android:rating="5" />
         </LinearLayout>
 
         <com.google.android.material.textfield.TextInputLayout

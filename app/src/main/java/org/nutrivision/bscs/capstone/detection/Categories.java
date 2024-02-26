@@ -1,5 +1,6 @@
 package org.nutrivision.bscs.capstone.detection;
 
+import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.View;
@@ -70,12 +71,79 @@ public class Categories extends AppCompatActivity {
                 Categories.super.onBackPressed();
             }
         });
-        categoriesList = new ArrayList<>();
-        categoriesList.add(new CategoriesClass(R.drawable.vegetable_backdrop, R.drawable.vegetable, "Vegetables",R.string.vegetable_desc));
-        categoriesList.add(new CategoriesClass(R.drawable.fruit_backdrop, R.drawable.fruit, "Fruit",R.string.fruit_desc));
-        categoriesList.add(new CategoriesClass(R.drawable.raw_backdrop, R.drawable.raw, "Raw",R.string.raw_desc));
-        categoriesList.add(new CategoriesClass(R.drawable.processfood_backdrop, R.drawable.processfood, "Processed Foods",R.string.processfoods_desc));
-        categoriesList.add(new CategoriesClass(R.drawable.snack_backdrop, R.drawable.snack, "Snacks",R.string.snacks_desc));
-        categoriesList.add(new CategoriesClass(R.drawable.drinks_backdrop, R.drawable.drinks, "Drinks",R.string.drinks_desc));
+        vegetablesBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Vegetables");
+                intent.putExtra("Image",R.drawable.vegetable);
+                intent.putExtra("Description",R.string.vegetable_desc);
+                intent.putExtra("Background",R.drawable.vegetable_backdrop);
+                startActivity(intent);
+            }
+        });
+        fruitsBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Fruits");
+                intent.putExtra("Image",R.drawable.fruit);
+                intent.putExtra("Description",R.string.fruit_desc);
+                intent.putExtra("Background",R.drawable.fruit_backdrop);
+                startActivity(intent);
+            }
+        });
+        rawBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Raw");
+                intent.putExtra("Image",R.drawable.raw);
+                intent.putExtra("Description",R.string.raw_desc);
+                intent.putExtra("Background",R.drawable.raw_backdrop);
+                startActivity(intent);
+            }
+        });
+        processedBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Processed Foods");
+                intent.putExtra("Image",R.drawable.processfood);
+                intent.putExtra("Description",R.string.processfoods_desc);
+                intent.putExtra("Background",R.drawable.processfood_backdrop);
+                startActivity(intent);
+            }
+        });
+        snacksBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Snacks");
+                intent.putExtra("Image",R.drawable.snack);
+                intent.putExtra("Description",R.string.snacks_desc);
+                intent.putExtra("Background",R.drawable.snack_backdrop);
+                startActivity(intent);
+            }
+        });
+        drinksBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Categories.this, categoriesList.class);
+                intent.putExtra("Title","Drinks");
+                intent.putExtra("Image",R.drawable.drinks);
+                intent.putExtra("Description",R.string.drinks_desc);
+                intent.putExtra("Background",R.drawable.drinks_backdrop);
+                startActivity(intent);
+            }
+        });
+
+//        categoriesList = new ArrayList<>();
+//        categoriesList.add(new CategoriesClass(R.drawable.vegetable_backdrop, R.drawable.vegetable, "Vegetables",R.string.vegetable_desc));
+//        categoriesList.add(new CategoriesClass(R.drawable.fruit_backdrop, R.drawable.fruit, "Fruit",R.string.fruit_desc));
+//        categoriesList.add(new CategoriesClass(R.drawable.raw_backdrop, R.drawable.raw, "Raw",R.string.raw_desc));
+//        categoriesList.add(new CategoriesClass(R.drawable.processfood_backdrop, R.drawable.processfood, "Processed Foods",R.string.processfoods_desc));
+//        categoriesList.add(new CategoriesClass(R.drawable.snack_backdrop, R.drawable.snack, "Snacks",R.string.snacks_desc));
+//        categoriesList.add(new CategoriesClass(R.drawable.drinks_backdrop, R.drawable.drinks, "Drinks",R.string.drinks_desc));
     }
 }

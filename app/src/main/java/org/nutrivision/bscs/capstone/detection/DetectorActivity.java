@@ -593,8 +593,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     private void analyzeForDiabetes(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
-        String triggerConditions = "";
+        //String triggerConditions = "";
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("diabetes");
         List<String> highIn = new ArrayList<>();
         double servingSize = 0;
         // Find the serving size in the nutritionItemList
@@ -615,7 +616,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -624,7 +624,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double maxCarbohydrates = 60; // 60g
                     double carbohydrateValue = value * servingSize;
                     if (carbohydrateValue > maxCarbohydrates) {
-                        triggerCondition.add("diabetes");
                         highIn.add("carbohydrates");
                         safeToConsume = false;
                     }
@@ -635,7 +634,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double addedSugarSafeRange = 25; //25g
                     double addedSugarValue = value * servingSize;
                     if (addedSugarValue > addedSugarSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -645,7 +643,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -654,21 +651,19 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     break;
             }
         }
-        if (triggerCondition.contains("diabetes")) {
-            triggerConditions = triggerCondition.toString();
-        }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-        Log.e("Trigger", "Trigger List: " + triggerConditions);
+        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
         Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
         Log.e("Trigger", "No. of servings: " + servingSize);
-
+        return;
     }
 
     private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("High Blood / Hypertension");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;
@@ -684,7 +679,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             switch (key) {
                 case "Category":
                     if (key == "Alcohol") {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Alcohol");
                         safeToConsume = false;
                     }
@@ -695,7 +689,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double totalFatSafeRange = totalFat / 9;
                     double totalFatValue = value * servingSize;
                     if (totalFatValue > totalFatSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Fat");
                         safeToConsume = false;
                     }
@@ -705,7 +698,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -714,7 +706,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double maxCarbohydrates = 60; //60g
                     double carbohydratesValue = value * servingSize;
                     if (carbohydratesValue > maxCarbohydrates) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("carbohydrates");
                         safeToConsume = false;
                     }
@@ -724,7 +715,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -733,7 +723,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -741,22 +730,20 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 default:
                     break;
             }
-            if (triggerCondition.contains("High Blood / Hypertension")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
-
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
+        return;
     }
 
     private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("Heart Problem");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
@@ -765,7 +752,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         for (NutritionItem item : nutritionItemList) {
             if ("No.Servings".equals(item.getLabel())) {
                 servingSize = extractNumericValue(item.getValue());
-                break;  // Exit the loop once the serving size is found
+                break;
             }
         }
 
@@ -780,7 +767,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -789,7 +775,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -798,7 +783,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -807,7 +791,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double transFatRange = 0; // 0 Consume is safe
                     double transFatValue = value * servingSize;
                     if (transFatRange > transFatRange) {
-                        triggerCondition.add("Heart problem");
                         highIn.add("trans fat");
                         safeToConsume = false;
                     }
@@ -815,22 +798,20 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 default:
                     break;
             }
-            if (triggerCondition.contains("Heart problem")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
     private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("kidney problem");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;
@@ -848,7 +829,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("sodium");
                         safeToConsume = false;
                     }
@@ -857,7 +837,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double potassiumSafeRange = 2500; // mg
                     double potassiumValue = value * servingSize;
                     if (potassiumValue > potassiumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("potassium");
                         safeToConsume = false;
                     }
@@ -866,7 +845,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double phosphorousSafeRange = 800; // mg
                     double phosphorousValue = value * servingSize;
                     if (phosphorousValue > phosphorousValue) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("potassium");
                         safeToConsume = false;
                     }
@@ -879,7 +857,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double calciumSafeRange = 1000; //mg
                     double calciumValue = value * servingSize;
                     if (calciumValue > calciumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("calcium");
                         safeToConsume = false;
                     }
@@ -887,22 +864,20 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 default:
                     break;
             }
-            if (triggerCondition.contains("kidney problem")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
     private void analyzeForObese(List<NutritionItem> nutritionItemList) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("Obesity");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
@@ -924,7 +899,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double calorieSafeRange = 1000; // kcal
                     double calorieValue = value * servingSize;
                     if (calorieValue > calorieSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -936,7 +910,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -946,7 +919,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -955,7 +927,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -964,7 +935,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                     double transFatRange = 0; // 0 Consume is safe
                     double transFatValue = value * servingSize;
                     if (transFatRange > transFatRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("trans fat");
                         safeToConsume = false;
                     }
@@ -972,17 +942,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 default:
                     break;
             }
-            if (triggerCondition.contains("Heart problem")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
     private double extractNumericValue(String input) {

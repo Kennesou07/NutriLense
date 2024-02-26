@@ -62,7 +62,10 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="150dp"
-                android:layout_margin="15dp"
+                android:layout_marginStart="15dp"
+                android:layout_marginTop="15dp"
+                android:layout_marginEnd="15dp"
+                android:layout_marginBottom="15dp"
                 android:background="@drawable/vegetable_backdrop">
 
                 <TextView
@@ -88,6 +91,7 @@
             </RelativeLayout>
 
             <ImageView
+                android:id="@+id/vegetableImg"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:layout_alignParentRight="true"
@@ -104,6 +108,7 @@
             android:elevation="8dp">
 
             <ImageView
+                android:id="@+id/fruitsImg"
                 android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:layout_marginLeft="20dp"
@@ -167,6 +172,7 @@
             </RelativeLayout>
 
             <ImageView
+                android:id="@+id/rawImg"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:layout_alignParentRight="true"
@@ -184,6 +190,7 @@
             android:elevation="8dp">
 
             <ImageView
+                android:id="@+id/processImg"
                 android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:layout_marginLeft="10dp"
@@ -247,6 +254,7 @@
             </RelativeLayout>
 
             <ImageView
+                android:id="@+id/snacksImg"
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:layout_alignParentRight="true"
@@ -263,6 +271,7 @@
             android:elevation="8dp">
 
             <ImageView
+                android:id="@+id/drinksImg"
                 android:layout_width="120dp"
                 android:layout_height="match_parent"
                 android:layout_marginLeft="20dp"

@@ -10,6 +10,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -148,7 +151,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         productsBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                //TODO display all the products here
             }
         });
 
@@ -170,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         ArrayList<FeaturedClass> featuredModels = new ArrayList<>();
         featuredModels.add(new FeaturedClass(R.drawable.sample_image,"Model 35","Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."));
-        featuredModels.add(new FeaturedClass(R.drawable.sample_image,"Model 9","Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."));
+        featuredModels.add(new FeaturedClass(R.drawable.sample_image,"Model 295","Accuracy: 89.7% \nPrecision: 88.9% \nRecall: 77.1%"));
         featuredModels.add(new FeaturedClass(R.drawable.sample_image,"Model 100","Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."));
 
         adapterModel = new FeaturedAdapter(featuredModels);
@@ -439,7 +442,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         // Display or handle the count as needed
         return noCount;
     }
-    // Function to modify text and photo for other cases
     private void ifNotHealthy() {
         txtTitle.setText("Unhealthy");
         txtTitle.setTextSize(16);
@@ -548,11 +550,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
     private void showFeedback(){
         LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         View dialogView = layoutInflater.inflate(R.layout.inflater_feedback,null);
-        RatingBar rating = dialogView.findViewById(R.id.ratingbar);
-        float ratings = rating.getRating();
         TextInputEditText feedback = dialogView.findViewById(R.id.etFeedback);
-        String feedbacks = feedback.getText().toString().trim();
         Button submit = dialogView.findViewById(R.id.submitBtn);
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
         alertDialog.setView(dialogView);
@@ -562,13 +562,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                feedbackDialog.dismiss();
-                sendFeedback(feedbacks,ratings);
+                String feedbacks = feedback.getText().toString().trim();
+                if (feedbacks.isEmpty() || feedbacks == ""){
+                    feedback.setError("Missing Field*");
+                    feedback.requestFocus();
+                    imm.showSoftInput(feedback, InputMethodManager.SHOW_IMPLICIT);
+                }
+                else{
+                    feedbackDialog.dismiss();
+                    sendFeedback(feedbacks);
+                }
             }
         });
         feedbackDialog.show();
     }
-    private void sendFeedback(String feedback, float rating){
+    private void sendFeedback(String feedback){
         SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
         int ID = getID.getInt("userId", 0);
         StringRequest stringRequest = new StringRequest(Request.Method.POST, FEEDBACK,
@@ -615,7 +623,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 Map<String, String> params = new HashMap<>();
                 params.put("ID", String.valueOf(ID));
                 params.put("Feedback", feedback);
-                params.put("Rating", String.valueOf(rating));
                 return params;
             }
         };
