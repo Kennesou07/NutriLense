@@ -5,6 +5,7 @@ import static org.nutrivision.bscs.capstone.detection.API.PRODUCT_DETAILS;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -17,7 +18,10 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
@@ -26,6 +30,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,7 +69,6 @@ import org.nutrivision.bscs.capstone.detection.customview.OverlayView.DrawCallba
 import org.nutrivision.bscs.capstone.detection.tflite.DetectorFactory;
 import org.nutrivision.bscs.capstone.detection.tflite.YoloV5Classifier;
 import org.nutrivision.bscs.capstone.detection.tracking.MultiBoxTracker;
-import org.w3c.dom.Text;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -72,7 +76,6 @@ import org.w3c.dom.Text;
  */
 public class DetectorActivity extends CameraActivity implements OnImageAvailableListener {
     private static final Logger LOGGER = new Logger();
-
     private static final DetectorMode MODE = DetectorMode.TF_OD_API;
     private static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.7f;
     private static final boolean MAINTAIN_ASPECT = true;
@@ -172,6 +175,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         detectedObjectsAdapter.setOnItemClickListener(new DetectedObjectsAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String objectName) {
+                Intent stopIntent = new Intent("STOP_TIMER_ACTION");
+                sendBroadcast(stopIntent);
+
                 Toast.makeText(DetectorActivity.this, "Clicked: " + objectName, Toast.LENGTH_SHORT).show();
                 Log.d("DetectedObjectsAdapter", "Item clicked: " + objectName);
                 displayInformation(objectName);
@@ -260,6 +266,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             readyForNextImage();
             return;
         }
+
         computingDetection = true;
         LOGGER.i("Preparing image " + currTimestamp + " for detection in bg thread.");
 
@@ -306,6 +313,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                             final RectF location = result.getLocation();
                             if (location != null && result.getConfidence() >= minimumConfidence) {
                                 canvas.drawRect(location, paint);
+                                Intent intent = new Intent("RESET_TIMER_ACTION");
+                                sendBroadcast(intent);
 
                                 cropToFrameTransform.mapRect(location);
 
@@ -329,7 +338,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                     }
                                 });
                         // Update RecyclerView with detected objects
-                        runOnUiThread(() -> detectedObjectsAdapter.updateData(mappedRecognitions));
+                        runOnUiThread(() ->
+                                detectedObjectsAdapter.updateData(mappedRecognitions));
                         Log.d("DetectorActivity", "data size: " + mappedRecognitions.size());
                     }
                 });
@@ -391,7 +401,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                         while (keys.hasNext()) {
                                             String key = keys.next();
                                             String value = data.getString(key);
-                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !key.equals("Category")) {
+                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !key.equals("Category") && !key.equals("view_count") && !key.equals("Product Image")) {
                                                 // Create a NutritionItem for each key-value pair
                                                 NutritionItem nutritionItem = new NutritionItem(key, value);
                                                 nutritionItemList.add(nutritionItem);
@@ -443,10 +453,14 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String triggeringCondition, String highIn) {
         if (productDialog == null) {
+            String servingSizeText = "";
+            int servingSize;
             LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View dialogView = inflater.inflate(R.layout.inflater_product_details, null);
             RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
+//            recyclerView.setLayoutManager(new GridLayoutManager(this, 2)); // Set span count to 2 for two columns
             TextView productName = dialogView.findViewById(R.id.ProductName);
+            TextView servingSizes = dialogView.findViewById(R.id.servingSize);
             Button btnDone = dialogView.findViewById(R.id.Done);
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             productName.setText(prodName);
@@ -456,30 +470,58 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
             // Update the color of the product name based on health condition
             if (isSafeToConsume) {
-                productName.setTextColor(getResources().getColor(R.color.green)); // Set color to green
-
-                // Add a note under the product name
+                for (NutritionItem item : nutritionItemList) {
+                    if ("No.Servings".equals(item.getLabel())) {
+                        servingSize = (int) extractNumericValue(item.getValue());
+                        servingSizeText = "No. of servings: " + servingSize;
+                        break;
+                    }
+                }
+                servingSizes.setText(servingSizeText);
+                productName.setTextColor(Color.GREEN);
+                ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
+                icon_indicator.setImageResource(R.drawable.food_safe);
                 TextView noteTextView = dialogView.findViewById(R.id.Note);
                 noteTextView.setText("This food is safe to consume.");
-                noteTextView.setTextColor(getResources().getColor(R.color.green));
+                noteTextView.setTextColor(getResources().getColor(R.color.lightgreen));
                 noteTextView.setBackgroundColor(getResources().getColor(R.color.black));
+                noteTextView.setPadding(4, 4, 4, 4);
                 TextView reminderTextView = dialogView.findViewById(R.id.reminder);
                 reminderTextView.setVisibility(View.VISIBLE);
+                reminderTextView.setTextColor(getResources().getColor(R.color.bluegreen));
 
             } else {
-                productName.setTextColor(getResources().getColor(R.color.red)); // Set color to red
-
+                for (NutritionItem item : nutritionItemList) {
+                    if ("No.Servings".equals(item.getLabel())) {
+                        servingSize = (int) extractNumericValue(item.getValue());
+                        servingSizeText = "No. of servings: " + servingSize;
+                        break;
+                    }
+                }
+                servingSizes.setText(servingSizeText);
+                productName.setTextColor(getResources().getColor(R.color.red));
+                ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
+                icon_indicator.setImageResource(R.drawable.not_safe);
                 // Display a warning based on the triggering health condition
                 String warningMessage = "Warning: This food is high in " + highIn + " might trigger " + triggeringCondition + ".";
-                // Add a warning under the product name
+
+                SpannableString spannableString = new SpannableString(warningMessage);
+                ForegroundColorSpan redSpan = new ForegroundColorSpan(getResources().getColor(R.color.red1));
+                spannableString.setSpan(redSpan, 0, "Warning:".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ForegroundColorSpan whiteSpan = new ForegroundColorSpan(Color.WHITE);
+                spannableString.setSpan(whiteSpan, "Warning:".length(), warningMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
                 TextView warningTextView = dialogView.findViewById(R.id.Note);
-                warningTextView.setText(warningMessage);
-                warningTextView.setTextColor(getResources().getColor(R.color.warning));
-                warningTextView.setBackgroundColor(getResources().getColor(R.color.black));
+                warningTextView.setText(spannableString);
+                warningTextView.setTextColor(Color.WHITE);
+                warningTextView.setBackgroundColor(getResources().getColor(R.color.dark_red));
+                warningTextView.setPadding(4, 4, 4, 4);
+                TextView reminderTextView = dialogView.findViewById(R.id.reminder);
+                reminderTextView.setVisibility(View.GONE);
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setView(dialogView);
+            builder.setView(dialogView).setCancelable(false);
             productDialog = builder.create();
             Animation sideAnim = AnimationUtils.loadAnimation(this, R.anim.side_animation);
             dialogView.setAnimation(sideAnim);
@@ -488,6 +530,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 public void onClick(View view) {
                     productDialog.dismiss();
                     productDialog = null;
+                    Intent startIntent = new Intent("START_TIMER_ACTION");
+                    sendBroadcast(startIntent);
                 }
             });
             productDialog.show();
@@ -598,7 +642,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         triggerCondition.add("diabetes");
         List<String> highIn = new ArrayList<>();
         double servingSize = 0;
-        // Find the serving size in the nutritionItemList
         for (NutritionItem item : nutritionItemList) {
             if ("No.Servings".equals(item.getLabel())) {
                 servingSize = extractNumericValue(item.getValue());
@@ -956,5 +999,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         // Assuming the input is in the format "123mg" or "456g" etc.
         String numericValue = input.replaceAll("[^\\d.]+", "");
         return Double.parseDouble(numericValue);
+    }
+
+    public DetectorActivity(){
+        // Zero argument constructor
     }
 }

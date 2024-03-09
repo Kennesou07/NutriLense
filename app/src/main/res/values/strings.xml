@@ -27,6 +27,8 @@
     <string name="forget_password_details">Input your email for the password reset link to be sent promptly and securely to your registered email address.</string>
     <string name="link_sent_desc">Password reset link has been successfully sent to </string>
     <string name="network_error_desc">Please connect to the internet.</string>
+    <string name="idle">Are you still trying to detect something? Please try changing angles or adjusting light.</string>
+    <string name="no_object">Or maybe the object is still not in the database... \nSend us feedback</string>
     <string name="navigation_open">Open navigation drawer</string>
     <string name="navigation_close">Close navigation drawer</string>
     <string name="featured_model_desc">These model is a deep learning algorithm utilized within our app for real-time object detection and recognition. By analyzing input images or video streams, Models quickly and accurately identifies various objects and their locations within the scene, providing crucial information for enhancing user experiences.</string>

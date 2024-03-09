@@ -9,6 +9,7 @@
     <color name="tfe_semi_transparent">#66000000</color>
     <color name="transparent">#00000000</color>
     <color name="colorPrimary">#3F51B5</color>
+    <color name="bluegreen">#265867</color>
     <color name="control_background">#cc4285f4</color>
     <color name="colorAccent">#808080 </color>
     <color name="lightWhite">#F5F5F5 </color>
@@ -17,10 +18,12 @@
     <color name="selection_focus">#00bfff</color>
     <color name="item_normal">#eeeeee</color>
     <color name="green">#BC00C113</color>
-    <color name="lightgreen">#F332D504</color>
+    <color name="lightgreen">#52FF00</color>
     <color name="red">#FF0000</color>
+    <color name="red1">#DF1F1F</color>
     <color name="lightred">#FF7F7F</color>
     <color name="orange">#F7BE6D</color>
     <color name="warning">#FFFF00</color>
     <color name="yellow">#FFFF21</color>
+    <color name="dark_red">#381616</color>
 </resources>
