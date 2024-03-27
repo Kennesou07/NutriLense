@@ -570,4 +570,43 @@ public class CameraConnectionFragment extends Fragment {
           .create();
     }
   }
+  public void turnOnFlash() {
+    if (cameraDevice != null) {
+      try {
+        CameraManager cameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
+        String cameraId = cameraDevice.getId();
+        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+        Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+        if (available) {
+          CameraManager.TorchCallback torchCallback = new CameraManager.TorchCallback() {
+            @Override
+            public void onTorchModeUnavailable(String cameraId) {
+              super.onTorchModeUnavailable(cameraId);
+            }
+
+            @Override
+            public void onTorchModeChanged(String cameraId, boolean enabled) {
+              super.onTorchModeChanged(cameraId, enabled);
+            }
+          };
+          cameraManager.registerTorchCallback(torchCallback, null);
+          cameraManager.setTorchMode(cameraId, true);
+        }
+      } catch (CameraAccessException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public void turnOffFlash() {
+    if (cameraDevice != null) {
+      try {
+        CameraManager cameraManager = (CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);
+        String cameraId = cameraDevice.getId();
+        cameraManager.setTorchMode(cameraId, false);
+      } catch (CameraAccessException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 }

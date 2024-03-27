@@ -14,6 +14,8 @@ public class API {
     public static final String HEALTH_CONDITION = SERVER + "health.php";
     public static final String LOAD_PROFILE = SERVER + "profile.php";
     public static final String PRODUCT_CATEGORY = SERVER + "category.php";
+    public static final String PRODUCT = SERVER + "product.php";
     public static final String FEEDBACK = SERVER + "feedback.php";
-
+    public static final String CONSUMED_GOODS = SERVER + "history.php";
+    public static final String CONSUMPTIONS = SERVER + "getHistory.php";
 }

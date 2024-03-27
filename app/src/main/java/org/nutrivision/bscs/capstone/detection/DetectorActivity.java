@@ -1,5 +1,6 @@
 package org.nutrivision.bscs.capstone.detection;
 
+import static org.nutrivision.bscs.capstone.detection.API.CONSUMED_GOODS;
 import static org.nutrivision.bscs.capstone.detection.API.HEALTH_CONDITION;
 import static org.nutrivision.bscs.capstone.detection.API.PRODUCT_DETAILS;
 
@@ -57,11 +58,14 @@ import org.nutrivision.bscs.capstone.detection.env.Logger;
 import org.nutrivision.bscs.capstone.detection.tflite.Classifier;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.nutrivision.bscs.capstone.detection.customview.OverlayView;
@@ -355,8 +359,6 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         return DESIRED_PREVIEW_SIZE;
     }
 
-    // Which detection model to use: by default uses Tensorflow Object Detection API frozen
-    // checkpoints.
     private enum DetectorMode {
         TF_OD_API;
     }
@@ -409,7 +411,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                                                 Log.d("NutritionInfo", key + ": " + value);
                                             }
                                         }
-                                        checkHealthCondition(ID, nutritionItemList);
+                                        checkHealthCondition(ID, nutritionItemList, prodName);
                                         // Update your UI or perform other actions with the retrieved data
                                         // updateRecyclerView(nutritionItemList,false,null,null);
                                     } else {
@@ -451,7 +453,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
     private AlertDialog productDialog;
 
-    private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String triggeringCondition, String highIn) {
+    private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String foodName, String highIn) {
         if (productDialog == null) {
             String servingSizeText = "";
             int servingSize;
@@ -461,13 +463,22 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 //            recyclerView.setLayoutManager(new GridLayoutManager(this, 2)); // Set span count to 2 for two columns
             TextView productName = dialogView.findViewById(R.id.ProductName);
             TextView servingSizes = dialogView.findViewById(R.id.servingSize);
-            Button btnDone = dialogView.findViewById(R.id.Done);
+            Button btnConsume = dialogView.findViewById(R.id.btnConsumed);
+            Button btnClose = dialogView.findViewById(R.id.Done);
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             productName.setText(prodName);
             // Create an adapter for the RecyclerView
             NutritionAdapter adapter = new NutritionAdapter(nutritionItemList);
             recyclerView.setAdapter(adapter);
-
+            LegacyCameraConnectionFragment fragment = (LegacyCameraConnectionFragment) getFragmentManager().findFragmentById(R.id.container);
+            if (fragment != null) {
+                try {
+                    fragment.toggleFlash(false);
+                } catch (Exception e) {
+                    e.getMessage();
+                    e.printStackTrace();
+                }
+            }
             // Update the color of the product name based on health condition
             if (isSafeToConsume) {
                 for (NutritionItem item : nutritionItemList) {
@@ -482,7 +493,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
                 icon_indicator.setImageResource(R.drawable.food_safe);
                 TextView noteTextView = dialogView.findViewById(R.id.Note);
-                noteTextView.setText("This food is safe to consume.");
+                noteTextView.setText("This food is risk-free to consume.");
                 noteTextView.setTextColor(getResources().getColor(R.color.lightgreen));
                 noteTextView.setBackgroundColor(getResources().getColor(R.color.black));
                 noteTextView.setPadding(4, 4, 4, 4);
@@ -503,7 +514,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                 ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
                 icon_indicator.setImageResource(R.drawable.not_safe);
                 // Display a warning based on the triggering health condition
-                String warningMessage = "Warning: This food is high in " + highIn + " might trigger " + triggeringCondition + ".";
+                String warningMessage = "Warning: This food is high in " + highIn + ".";
 
                 SpannableString spannableString = new SpannableString(warningMessage);
                 ForegroundColorSpan redSpan = new ForegroundColorSpan(getResources().getColor(R.color.red1));
@@ -525,20 +536,50 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             productDialog = builder.create();
             Animation sideAnim = AnimationUtils.loadAnimation(this, R.anim.side_animation);
             dialogView.setAnimation(sideAnim);
-            btnDone.setOnClickListener(new View.OnClickListener() {
+
+            btnClose.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     productDialog.dismiss();
                     productDialog = null;
                     Intent startIntent = new Intent("START_TIMER_ACTION");
                     sendBroadcast(startIntent);
+                    SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+                    boolean flashState = prefs.getBoolean("flashState", false);
+                    if (flashState == true) {
+                        LegacyCameraConnectionFragment fragment = (LegacyCameraConnectionFragment) getFragmentManager().findFragmentById(R.id.container);
+                        if (fragment != null) {
+                            try {
+                                fragment.toggleFlash(true);
+                            } catch (Exception e) {
+                                e.getMessage();
+                                e.printStackTrace();
+                            }
+                        }
+                    } else {
+                        LegacyCameraConnectionFragment fragment = (LegacyCameraConnectionFragment) getFragmentManager().findFragmentById(R.id.container);
+                        if (fragment != null) {
+                            try {
+                                fragment.toggleFlash(false);
+                            } catch (Exception e) {
+                                e.getMessage();
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            });
+            btnConsume.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    storeConsumeToDB(foodName);
                 }
             });
             productDialog.show();
         }
     }
 
-    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList) {
+    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList, String foodName) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, HEALTH_CONDITION,
                 new Response.Listener<String>() {
                     @Override
@@ -579,23 +620,23 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
                                         // Analyze nutrition details based on health conditions
                                         if (isDiabetic) {
-                                            analyzeForDiabetes(nutritionItemList);
+                                            analyzeForDiabetes(nutritionItemList, foodName);
                                         }
 
                                         if (isHighBlood) {
-                                            analyzeForHighBloodPressure(nutritionItemList);
+                                            analyzeForHighBloodPressure(nutritionItemList, foodName);
                                         }
 
                                         if (hasHeartProblem) {
-                                            analyzeForHeartProblem(nutritionItemList);
+                                            analyzeForHeartProblem(nutritionItemList, foodName);
                                         }
 
                                         if (hasKidneyProblem) {
-                                            analyzeForKidneyProblem(nutritionItemList);
+                                            analyzeForKidneyProblem(nutritionItemList, foodName);
                                         }
 
                                         if (isObese) {
-                                            analyzeForObese(nutritionItemList);
+                                            analyzeForObese(nutritionItemList, foodName);
                                         }
                                         //updateRecyclerView(nutritionItemList, true, allTriggers,"");
                                     } else {
@@ -635,7 +676,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         queue.add(stringRequest);
     }
 
-    private void analyzeForDiabetes(List<NutritionItem> nutritionItemList) {
+    private void analyzeForDiabetes(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         //String triggerConditions = "";
         List<String> triggerCondition = new ArrayList<>();
@@ -695,7 +736,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             }
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
         Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
         Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
@@ -703,7 +744,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         return;
     }
 
-    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
+    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
         triggerCondition.add("High Blood / Hypertension");
@@ -775,7 +816,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             }
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
         Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
         Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
@@ -783,7 +824,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         return;
     }
 
-    private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList) {
+    private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
         triggerCondition.add("Heart Problem");
@@ -843,7 +884,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             }
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
 
         Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
@@ -851,7 +892,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
-    private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList) {
+    private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
         triggerCondition.add("kidney problem");
@@ -909,7 +950,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             }
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
 
         Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
@@ -917,7 +958,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
-    private void analyzeForObese(List<NutritionItem> nutritionItemList) {
+    private void analyzeForObese(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
         triggerCondition.add("Obesity");
@@ -987,7 +1028,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             }
         }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, String.valueOf(triggerCondition), allhighIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
 
         Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
@@ -1001,7 +1042,62 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         return Double.parseDouble(numericValue);
     }
 
-    public DetectorActivity(){
+    public DetectorActivity() {
         // Zero argument constructor
+    }
+
+    private void storeConsumeToDB(String foodname) {
+        Date currentDate = new Date();
+        SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
+        int userID = getID.getInt("userId", 0);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.ENGLISH);
+        String formattedDate = dateFormat.format(currentDate);
+        Log.d("Date", "Formatted Date: " + formattedDate);
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, CONSUMED_GOODS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Check if the response is "Success!"
+                                if ("Success!".equals(response.trim())) {
+                                    // Success! Do whatever you need to do here
+                                    productDialog.dismiss();
+                                    productDialog = null;
+                                } else {
+                                    // Handle the case where the server response is not "Success!"
+                                    Log.e("Error", "Server response: " + response);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(userID));
+                params.put("Food", foodname);
+                params.put("Date", formattedDate);
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(DetectorActivity.this);
+        queue.add(stringRequest);
     }
 }

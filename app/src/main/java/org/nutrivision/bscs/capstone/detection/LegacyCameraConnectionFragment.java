@@ -1,12 +1,18 @@
 package org.nutrivision.bscs.capstone.detection;
 
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.service.controls.templates.ToggleRangeTemplate;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
@@ -41,6 +47,7 @@ public class LegacyCameraConnectionFragment extends Fragment {
   private int layout;
   /** An {@link AutoFitTextureView} for camera preview. */
   private AutoFitTextureView textureView;
+
   /**
    * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a {@link
    * TextureView}.
@@ -71,6 +78,8 @@ public class LegacyCameraConnectionFragment extends Fragment {
                 CameraConnectionFragment.chooseOptimalSize(
                     sizes, desiredSize.getWidth(), desiredSize.getHeight());
             parameters.setPreviewSize(previewSize.getWidth(), previewSize.getHeight());
+//            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+
             camera.setDisplayOrientation(90);
             camera.setParameters(parameters);
             camera.setPreviewTexture(texture);
@@ -185,4 +194,53 @@ public class LegacyCameraConnectionFragment extends Fragment {
     }
     return -1; // No camera found
   }
+  protected void turnOnFlash() {
+    int index = getCameraId();
+    camera = Camera.open(index);
+
+      if(camera != null){
+        Camera.Parameters params = camera.getParameters();
+        params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        camera.setParameters(params);
+      }
+  }
+
+  protected void turnOffFlash() {
+    if (camera != null) {
+      Camera.Parameters params = camera.getParameters();
+      params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+      camera.setParameters(params);
+    }
+  }
+
+  public void releaseCamera() {
+    // Release the camera resource
+    stopCamera();
+  }
+  public void toggleFlash(boolean isFlashOn) {
+    if (camera != null) {
+      Camera.Parameters params = camera.getParameters();
+      if (isFlashOn) {
+        params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+      } else {
+        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+      }
+      camera.setParameters(params);
+    }
+  }
+  public void changeExposure(int exposure) {
+    try {
+      if (camera != null) {
+        Camera.Parameters params = camera.getParameters();
+        int minExposure = params.getMinExposureCompensation();
+        int maxExposure = params.getMaxExposureCompensation();
+        params.setExposureCompensation(exposure);
+        camera.setParameters(params);
+      }
+    } catch (RuntimeException e) {
+      // Handle the exception gracefully, e.g., log the error message
+      Log.e("CameraFragment", "Error setting exposure compensation: " + e.getMessage());
+    }
+  }
+
 }

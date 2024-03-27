@@ -53,11 +53,14 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.DefaultRetryPolicy;
@@ -95,17 +98,22 @@ public abstract class CameraActivity extends AppCompatActivity
 //        CompoundButton.OnCheckedChangeListener,
         View.OnClickListener,
         NavigationView.OnNavigationItemSelectedListener {
-    IntentFilter intentFilter = new IntentFilter("RESET_TIMER_ACTION");
-    BroadcastReceiver resetReceiver,stopReceiver,startReceiver;
+    BroadcastReceiver resetReceiver, stopReceiver, startReceiver;
+    String cameraId;
+    Fragment fragment;
+    CameraManager manager;
     private static final Logger LOGGER = new Logger();
     private long lastDetectionTime = 0;
-    private static final long INACTIVITY_DURATION = 5 * 1000; // 5 seconds in milliseconds
+    private long INACTIVITY_DURATION = 20 * 1000; // 20 seconds in milliseconds
     private static final int MAX_PROMPT_COUNT = 3;
     private int promptCount = 0;
+    private int minExposureCompensation = -4;
+    private int initialExposureCompensation = 0;
+    private int maxExposureCompensation = 4;
     private CountDownTimer inactivityTimer;
     private static final int PERMISSIONS_REQUEST = 1;
+    private static final int FLASHLIGHT_PERMISSION_REQUEST_CODE = 2;
     AlertDialog feedbackDialog, promptDialog;
-
     private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
     private static final String ASSET_PATH = "";
     protected int previewWidth = 0;
@@ -156,12 +164,23 @@ public abstract class CameraActivity extends AppCompatActivity
         super.onCreate(null);
         setContentView(R.layout.tfe_od_activity_camera);
         Toolbar toolbar = findViewById(R.id.toolbar);
+        ImageView settings = findViewById(R.id.btnSettings);
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSettings();
+            }
+        });
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         startInactivityTimer();
         IntentFilter resetFilter = new IntentFilter("RESET_TIMER_ACTION");
         IntentFilter stopFilter = new IntentFilter("STOP_TIMER_ACTION");
         IntentFilter startFilter = new IntentFilter("START_TIMER_ACTION");
+        IntentFilter toggleFilter = new IntentFilter("TOGGLE_LIGHT_ACTION");
+        IntentFilter exposureFilter = new IntentFilter("EXPOSURE_ACTION");
+        registerReceiver(toggleReceiver, toggleFilter);
+        registerReceiver(exposureReceiver, exposureFilter);
         resetReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -176,14 +195,14 @@ public abstract class CameraActivity extends AppCompatActivity
                 stopInactivityTimer();
             }
         };
-        registerReceiver(stopReceiver,stopFilter);
+        registerReceiver(stopReceiver, stopFilter);
         startReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 startInactivityTimer();
             }
         };
-        registerReceiver(startReceiver,startFilter);
+        registerReceiver(startReceiver, startFilter);
         if (hasPermission()) {
             setFragment();
         } else {
@@ -302,6 +321,7 @@ public abstract class CameraActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.nav_realtime);
         animateNavigationDrawer();
+        legacyCameraFragment = new LegacyCameraConnectionFragment(CameraActivity.this, getLayoutId(), getDesiredPreviewFrameSize());
     }
 
     protected ArrayList<String> getModelStrings(AssetManager mgr, String path) {
@@ -492,6 +512,8 @@ public abstract class CameraActivity extends AppCompatActivity
         unregisterReceiver(resetReceiver);
         unregisterReceiver(startReceiver);
         unregisterReceiver(stopReceiver);
+        unregisterReceiver(toggleReceiver);
+        unregisterReceiver(exposureReceiver);
         stopInactivityTimer();
         super.onDestroy();
     }
@@ -514,6 +536,7 @@ public abstract class CameraActivity extends AppCompatActivity
             }
         }
     }
+
 
     private static boolean allPermissionsGranted(final int[] grantResults) {
         for (int result : grantResults) {
@@ -557,7 +580,7 @@ public abstract class CameraActivity extends AppCompatActivity
     }
 
     private String chooseCamera() {
-        final CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             for (final String cameraId : manager.getCameraIdList()) {
                 final CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
@@ -593,9 +616,8 @@ public abstract class CameraActivity extends AppCompatActivity
     }
 
     protected void setFragment() {
-        String cameraId = chooseCamera();
+        cameraId = chooseCamera();
 
-        Fragment fragment;
         if (useCamera2API) {
             CameraConnectionFragment camera2Fragment =
                     CameraConnectionFragment.newInstance(
@@ -619,6 +641,7 @@ public abstract class CameraActivity extends AppCompatActivity
         }
 
         getFragmentManager().beginTransaction().replace(R.id.container, fragment).commit();
+        Log.e("CAMERA USED", String.valueOf(fragment));
     }
 
     protected void fillBytes(final Plane[] planes, final byte[][] yuvBytes) {
@@ -720,6 +743,9 @@ public abstract class CameraActivity extends AppCompatActivity
             case R.id.nav_select_image:
                 startActivity(new Intent(CameraActivity.this, SelectImage.class));
                 break;
+            case R.id.nav_consumed:
+                startActivity(new Intent(CameraActivity.this, History.class));
+                break;
             case R.id.nav_profile:
                 startActivity(new Intent(CameraActivity.this, Profile.class));
                 break;
@@ -727,6 +753,7 @@ public abstract class CameraActivity extends AppCompatActivity
                 logout();
                 break;
             case R.id.nav_share:
+                shareApplication();
                 break;
             case R.id.nav_feedback:
                 showFeedback();
@@ -968,4 +995,155 @@ public abstract class CameraActivity extends AppCompatActivity
         }
     }
 
+    private void shareApplication() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        String message = "Hey, I found this cool app that can change the way you live by eating healthy products.!\n\nDownload link: https://nutrilense.ucc-bscs.com/";
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Check out this app!");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, message);
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
+    }
+
+    private LegacyCameraConnectionFragment legacyCameraFragment;
+
+    private void showSettings() {
+        stopInactivityTimer();
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = inflater.inflate(R.layout.inflater_settings, null);
+        ToggleButton toggleButton = dialogView.findViewById(R.id.toggleButton);
+        TextView progressTextView = dialogView.findViewById(R.id.progressTextView);
+        TextView idleTextView = dialogView.findViewById(R.id.idleTextView);
+        Button save = dialogView.findViewById(R.id.btnSave);
+        SeekBar exposureBar = dialogView.findViewById(R.id.exposureBar);
+        SeekBar idleBar = dialogView.findViewById(R.id.idleBar);
+        Animation popAnim = AnimationUtils.loadAnimation(this, R.anim.pop_animation);
+        dialogView.setAnimation(popAnim);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(dialogView).setCancelable(false);
+        promptDialog = builder.create();
+
+        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+        boolean flashState = prefs.getBoolean("flashState", false);
+        int exposureVal = prefs.getInt("exposureState", 0);
+        int idleVal = prefs.getInt("idleValue", 0);
+        toggleButton.setChecked(flashState);
+        exposureBar.setProgress(exposureVal);
+        idleBar.setProgress(idleVal);
+
+        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                // Save the state of the toggle button in SharedPreferences
+                SharedPreferences.Editor editor = getSharedPreferences("MyPrefs", MODE_PRIVATE).edit();
+                editor.putBoolean("flashState", isChecked);
+                editor.apply();
+                // Send broadcast intent with the toggle action
+                Intent toggleIntent = new Intent("TOGGLE_LIGHT_ACTION");
+                toggleIntent.putExtra("FLASH_STATE", isChecked);
+                sendBroadcast(toggleIntent);
+                // Show toast or perform other actions as needed
+                if (isChecked) {
+                    Toast.makeText(CameraActivity.this, "Flash On", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CameraActivity.this, "Flash Off", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                promptDialog.dismiss();
+                promptDialog = null;
+                startInactivityTimer();
+            }
+        });
+        exposureBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Log.e("SeekBarChangeListener", "New exposure compensation: " + progress);
+
+                // Save the state of the toggle button in SharedPreferences
+                SharedPreferences.Editor editor = getSharedPreferences("MyPrefs", MODE_PRIVATE).edit();
+                editor.putInt("exposureState", progress);
+                editor.apply();
+
+                // Calculate the exposure compensation value based on progress
+                Intent exposureIntent = new Intent("EXPOSURE_ACTION");
+                progressTextView.setText(String.valueOf(progress));
+                exposureIntent.putExtra("EXPOSURE_STATE", progress);
+                Log.d("SeekBarChangeListener", "Sending intent with exposure state: " + progress);
+                sendBroadcast(exposureIntent);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                progressTextView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                progressTextView.setVisibility(View.INVISIBLE);
+
+            }
+        });
+        idleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int idle, boolean b) {
+                SharedPreferences.Editor editor = getSharedPreferences("MyPrefs", MODE_PRIVATE).edit();
+                editor.putInt("idleValue", idle);
+                editor.apply();
+
+                idleTextView.setText(String.valueOf(idle) + "seconds");
+                INACTIVITY_DURATION = idle * 1000;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                idleTextView.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                idleTextView.setVisibility(View.INVISIBLE);
+            }
+        });
+        promptDialog.show();
+    }
+
+    private BroadcastReceiver toggleReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Extract the toggle action from the intent and pass it to the fragment
+            boolean isFlashOn = intent.getBooleanExtra("FLASH_STATE", false);
+            LegacyCameraConnectionFragment fragment = (LegacyCameraConnectionFragment) getFragmentManager().findFragmentById(R.id.container);
+            if (fragment != null) {
+                try {
+                    fragment.toggleFlash(isFlashOn);
+                } catch (Exception e) {
+                    e.getMessage();
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+    private BroadcastReceiver exposureReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.e("ExposureReceiver", "Received intent: " + intent.getAction());
+
+            // Extract the toggle action from the intent and pass it to the fragment
+            int exposureVal = intent.getIntExtra("EXPOSURE_STATE", 0);
+            Log.e("ExposureReceiver", "Exposure state: " + exposureVal);
+
+            LegacyCameraConnectionFragment fragment = (LegacyCameraConnectionFragment) getFragmentManager().findFragmentById(R.id.container);
+            if (fragment != null) {
+                try {
+                    fragment.changeExposure(exposureVal);
+                } catch (Exception e) {
+                    e.getMessage();
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
 }

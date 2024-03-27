@@ -24,6 +24,9 @@ public class DetectedObjectsAdapter extends RecyclerView.Adapter<DetectedObjects
         detectedObjects.addAll(newDetectedObjects);
         notifyDataSetChanged();
     }
+    public void clearData(){
+        detectedObjects.clear();
+    }
 
     @NonNull
     @Override

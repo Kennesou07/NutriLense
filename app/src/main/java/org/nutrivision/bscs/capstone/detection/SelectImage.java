@@ -1,5 +1,8 @@
 package org.nutrivision.bscs.capstone.detection;
 
+import static android.widget.Toast.LENGTH_SHORT;
+import static org.nutrivision.bscs.capstone.detection.API.CONSUMED_GOODS;
+import static org.nutrivision.bscs.capstone.detection.API.FEEDBACK;
 import static org.nutrivision.bscs.capstone.detection.API.HEALTH_CONDITION;
 import static org.nutrivision.bscs.capstone.detection.API.PRODUCT_DETAILS;
 
@@ -12,19 +15,24 @@ import android.content.SharedPreferences;
 import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -56,6 +64,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,11 +80,14 @@ import org.nutrivision.bscs.capstone.detection.tflite.YoloV5Classifier;
 import org.nutrivision.bscs.capstone.detection.tracking.MultiBoxTracker;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
@@ -87,6 +99,7 @@ public class SelectImage extends AppCompatActivity implements
     Toolbar toolbar;
     GoogleSignInOptions gso;
     GoogleSignInClient gsc;
+    AlertDialog feedbackDialog;
     public static final float MINIMUM_CONFIDENCE_TF_OD_API = 0.7f;
     private static final Logger LOGGER = new Logger();
     private final int SELECT_CODE = 100, CAPTURE_CODE = 102, REALTIME_CODE = 103;
@@ -131,9 +144,8 @@ public class SelectImage extends AppCompatActivity implements
         getPermission();
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestEmail().build();
         gsc = GoogleSignIn.getClient(this,gso);
-        GoogleSignInAccount acc = GoogleSignIn.getLastSignedInAccount(this);
         detectedObjectsAdapter = new DetectedObjectsAdapter();
-
+        detectedObjectsAdapter.clearData();
         /*-------------------HOOKS-------------*/
         selectButton = findViewById(R.id.storageBtn);
         imageView = findViewById(R.id.imgView);
@@ -212,28 +224,34 @@ public class SelectImage extends AppCompatActivity implements
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Uri selectedImageUri = data.getData();
-        try {
-            this.sourceBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),selectedImageUri);
-            if (sourceBitmap != null) {
-                this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
-
-                if (cropBitmap != null) {
-                    this.imageView.setImageBitmap(cropBitmap);
-                    runObjectDetection(cropBitmap);
-
+        if (resultCode == RESULT_OK && requestCode == SELECT_CODE && data != null) {
+            Uri selectedImageUri = data.getData();
+            try {
+                this.sourceBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImageUri);
+                if (sourceBitmap != null) {
+                    this.cropBitmap = Utils.processBitmap(sourceBitmap, TF_OD_API_INPUT_SIZE);
+                    if (cropBitmap != null) {
+                        this.imageView.setImageBitmap(cropBitmap);
+                        runObjectDetection(cropBitmap);
+                    } else {
+                        // Log an error or show a message indicating an issue with processing the bitmap.
+                        Log.e("MainActivity", "Error processing bitmap");
+                    }
                 } else {
-                    // Log an error or show a message indicating an issue with processing the bitmap.
-                    Log.e("MainActivity", "Error processing bitmap");
+                    // Log an error or show a message indicating an issue with loading the bitmap from the asset.
+                    Log.e("MainActivity", "Error loading bitmap from asset");
                 }
-            } else {
-                // Log an error or show a message indicating an issue with loading the bitmap from the asset.
-                Log.e("MainActivity", "Error loading bitmap from asset");
+            } catch (IOException e) {
+                Log.e("MainActivity", "IOException: " + e.getMessage());
+            } catch (NullPointerException e) {
+                Log.e("MainActivity", "NullPointerException: " + e.getMessage());
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } else {
+            this.imageView.setImageBitmap(null);
+            noImageSelect.setVisibility(View.VISIBLE);
         }
     }
+
 
     void getPermission(){
         if(checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
@@ -297,6 +315,7 @@ public class SelectImage extends AppCompatActivity implements
     // Run object detection method
     private void handleResult(Bitmap bitmap, List<Classifier.Recognition> results) {
         if(bitmap == null){
+            detectedObjectsAdapter.clearData();
             return;
         }
         else{
@@ -381,6 +400,9 @@ public class SelectImage extends AppCompatActivity implements
                 break;
             case R.id.nav_select_image:
                 break;
+            case R.id.nav_consumed:
+                startActivity(new Intent(SelectImage.this, History.class));
+                break;
             case R.id.nav_profile:
                 startActivity(new Intent(SelectImage.this, Profile.class));
                 break;
@@ -388,8 +410,10 @@ public class SelectImage extends AppCompatActivity implements
                 logout();
                 break;
             case R.id.nav_share:
+                shareApplication();
                 break;
             case R.id.nav_feedback:
+                showFeedback();
                 break;
             case R.id.nav_about:
                 break;
@@ -445,7 +469,7 @@ public class SelectImage extends AppCompatActivity implements
                                         while (keys.hasNext()) {
                                             String key = keys.next();
                                             String value = data.getString(key);
-                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !key.equals("Category")) {
+                                            if (!key.equals("id") && !key.equals("Product Names") && !value.isEmpty() && !key.equals("Category") && !key.equals("view_count") && !key.equals("Product Image")) {
                                                 // Create a NutritionItem for each key-value pair
                                                 NutritionItem nutritionItem = new NutritionItem(key, value);
                                                 nutritionItemList.add(nutritionItem);
@@ -453,7 +477,7 @@ public class SelectImage extends AppCompatActivity implements
                                                 Log.d("NutritionInfo", key + ": " + value);
                                             }
                                         }
-                                        checkHealthCondition(ID, nutritionItemList);
+                                        checkHealthCondition(ID, nutritionItemList, prodName);
                                         // Update your UI or perform other actions with the retrieved data
                                         // updateRecyclerView(nutritionItemList,false,null,null);
                                     } else {
@@ -494,13 +518,17 @@ public class SelectImage extends AppCompatActivity implements
     }
     private AlertDialog productDialog;
 
-    private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String triggeringCondition, String highIn) {
+    private void updateRecyclerView(List<NutritionItem> nutritionItemList, boolean isSafeToConsume, String foodName, String highIn) {
         if (productDialog == null) {
+            String servingSizeText = "";
+            int servingSize;
             LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View dialogView = inflater.inflate(R.layout.inflater_product_details, null);
             RecyclerView recyclerView = dialogView.findViewById(R.id.recyclerView);
             TextView productName = dialogView.findViewById(R.id.ProductName);
+            TextView servingSizes = dialogView.findViewById(R.id.servingSize);
             Button btnDone = dialogView.findViewById(R.id.Done);
+            Button btnConsume = dialogView.findViewById(R.id.btnConsumed);
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             productName.setText(prodName);
             // Create an adapter for the RecyclerView
@@ -509,26 +537,55 @@ public class SelectImage extends AppCompatActivity implements
 
             // Update the color of the product name based on health condition
             if (isSafeToConsume) {
-                productName.setTextColor(getResources().getColor(R.color.green)); // Set color to green
-
-                // Add a note under the product name
+                for (NutritionItem item : nutritionItemList) {
+                    if ("No.Servings".equals(item.getLabel())) {
+                        servingSize = (int) extractNumericValue(item.getValue());
+                        servingSizeText = "No. of servings: " + servingSize;
+                        break;
+                    }
+                }
+                servingSizes.setText(servingSizeText);
+                productName.setTextColor(Color.GREEN);
+                ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
+                icon_indicator.setImageResource(R.drawable.food_safe);
                 TextView noteTextView = dialogView.findViewById(R.id.Note);
-                noteTextView.setText("This food is safe to consume.");
-                noteTextView.setTextColor(getResources().getColor(R.color.green));
+                noteTextView.setText("This food is risk-free to consume.");
+                noteTextView.setTextColor(getResources().getColor(R.color.lightgreen));
                 noteTextView.setBackgroundColor(getResources().getColor(R.color.black));
+                noteTextView.setPadding(4, 4, 4, 4);
                 TextView reminderTextView = dialogView.findViewById(R.id.reminder);
                 reminderTextView.setVisibility(View.VISIBLE);
+                reminderTextView.setTextColor(getResources().getColor(R.color.bluegreen));
+
 
             } else {
-                productName.setTextColor(getResources().getColor(R.color.red)); // Set color to red
-
+                for (NutritionItem item : nutritionItemList) {
+                    if ("No.Servings".equals(item.getLabel())) {
+                        servingSize = (int) extractNumericValue(item.getValue());
+                        servingSizeText = "No. of servings: " + servingSize;
+                        break;
+                    }
+                }
+                servingSizes.setText(servingSizeText);
+                productName.setTextColor(getResources().getColor(R.color.red));
+                ImageView icon_indicator = dialogView.findViewById(R.id.icon_indicator);
+                icon_indicator.setImageResource(R.drawable.not_safe);
                 // Display a warning based on the triggering health condition
-                String warningMessage = "Warning: This food is high in " + highIn + " might trigger " + triggeringCondition + ".";
-                // Add a warning under the product name
+                String warningMessage = "Warning: This food is high in " + highIn + ".";
+
+                SpannableString spannableString = new SpannableString(warningMessage);
+                ForegroundColorSpan redSpan = new ForegroundColorSpan(getResources().getColor(R.color.red1));
+                spannableString.setSpan(redSpan, 0, "Warning:".length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ForegroundColorSpan whiteSpan = new ForegroundColorSpan(Color.WHITE);
+                spannableString.setSpan(whiteSpan, "Warning:".length(), warningMessage.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
                 TextView warningTextView = dialogView.findViewById(R.id.Note);
-                warningTextView.setText(warningMessage);
-                warningTextView.setTextColor(getResources().getColor(R.color.warning));
-                warningTextView.setBackgroundColor(getResources().getColor(R.color.black));
+                warningTextView.setText(spannableString);
+                warningTextView.setTextColor(Color.WHITE);
+                warningTextView.setBackgroundColor(getResources().getColor(R.color.dark_red));
+                warningTextView.setPadding(4, 4, 4, 4);
+                TextView reminderTextView = dialogView.findViewById(R.id.reminder);
+                reminderTextView.setVisibility(View.GONE);
             }
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -543,11 +600,17 @@ public class SelectImage extends AppCompatActivity implements
                     productDialog = null;
                 }
             });
+            btnConsume.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    storeConsumeToDB(foodName);
+                }
+            });
             productDialog.show();
         }
     }
 
-    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList) {
+    private void checkHealthCondition(int ID, List<NutritionItem> nutritionItemList, String foodName) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, HEALTH_CONDITION,
                 new Response.Listener<String>() {
                     @Override
@@ -588,20 +651,20 @@ public class SelectImage extends AppCompatActivity implements
 
                                         // Analyze nutrition details based on health conditions
                                         if (isDiabetic) {
-                                            analyzeForDiabetes(nutritionItemList);
+                                            analyzeForDiabetes(nutritionItemList, foodName);
                                         }
 
                                         if (isHighBlood) {
-                                            analyzeForHighBloodPressure(nutritionItemList);
+                                            analyzeForHighBloodPressure(nutritionItemList, foodName);
                                         }
                                         if (hasHeartProblem) {
-                                            analyzeForHeartProblem(nutritionItemList);
+                                            analyzeForHeartProblem(nutritionItemList, foodName);
                                         }
                                         if (hasKidneyProblem) {
-                                            analyzeForKidneyProblem(nutritionItemList);
+                                            analyzeForKidneyProblem(nutritionItemList, foodName);
                                         }
                                         if (isObese) {
-                                            analyzeForObese(nutritionItemList);
+                                            analyzeForObese(nutritionItemList, foodName);
                                         } else {
                                             updateRecyclerView(nutritionItemList, true, "", "");
                                         }
@@ -643,13 +706,13 @@ public class SelectImage extends AppCompatActivity implements
         queue.add(stringRequest);
     }
 
-    private void analyzeForDiabetes(List<NutritionItem> nutritionItemList) {
+    private void analyzeForDiabetes(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
-        String triggerConditions = "";
+        //String triggerConditions = "";
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("diabetes");
         List<String> highIn = new ArrayList<>();
         double servingSize = 0;
-        // Find the serving size in the nutritionItemList
         for (NutritionItem item : nutritionItemList) {
             if ("No.Servings".equals(item.getLabel())) {
                 servingSize = extractNumericValue(item.getValue());
@@ -667,7 +730,6 @@ public class SelectImage extends AppCompatActivity implements
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -676,7 +738,6 @@ public class SelectImage extends AppCompatActivity implements
                     double maxCarbohydrates = 60; // 60g
                     double carbohydrateValue = value * servingSize;
                     if (carbohydrateValue > maxCarbohydrates) {
-                        triggerCondition.add("diabetes");
                         highIn.add("carbohydrates");
                         safeToConsume = false;
                     }
@@ -687,7 +748,6 @@ public class SelectImage extends AppCompatActivity implements
                     double addedSugarSafeRange = 25; //25g
                     double addedSugarValue = value * servingSize;
                     if (addedSugarValue > addedSugarSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -697,7 +757,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("diabetes");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -706,21 +765,19 @@ public class SelectImage extends AppCompatActivity implements
                     break;
             }
         }
-        if (triggerCondition.contains("diabetes")) {
-            triggerConditions = triggerCondition.toString();
-        }
         String allhighIn = TextUtils.join(", ", highIn);
-        updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-        Log.e("Trigger", "Trigger List: " + triggerConditions);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
         Log.e("Trigger", "high in List: " + allhighIn);
         Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
         Log.e("Trigger", "No. of servings: " + servingSize);
-
+        return;
     }
 
-    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList) {
+    private void analyzeForHighBloodPressure(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("High Blood / Hypertension");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;
@@ -736,7 +793,6 @@ public class SelectImage extends AppCompatActivity implements
             switch (key) {
                 case "Category":
                     if (key == "Alcohol") {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Alcohol");
                         safeToConsume = false;
                     }
@@ -747,7 +803,6 @@ public class SelectImage extends AppCompatActivity implements
                     double totalFatSafeRange = totalFat / 9;
                     double totalFatValue = value * servingSize;
                     if (totalFatValue > totalFatSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Fat");
                         safeToConsume = false;
                     }
@@ -757,7 +812,6 @@ public class SelectImage extends AppCompatActivity implements
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -766,7 +820,6 @@ public class SelectImage extends AppCompatActivity implements
                     double maxCarbohydrates = 60; //60g
                     double carbohydratesValue = value * servingSize;
                     if (carbohydratesValue > maxCarbohydrates) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("carbohydrates");
                         safeToConsume = false;
                     }
@@ -776,7 +829,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -785,7 +837,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("High Blood / Hypertension");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -793,22 +844,20 @@ public class SelectImage extends AppCompatActivity implements
                 default:
                     break;
             }
-            if (triggerCondition.contains("High Blood / Hypertension")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
-
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
+        return;
     }
 
-    private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList) {
+    private void analyzeForHeartProblem(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("Heart Problem");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
@@ -817,7 +866,7 @@ public class SelectImage extends AppCompatActivity implements
         for (NutritionItem item : nutritionItemList) {
             if ("No.Servings".equals(item.getLabel())) {
                 servingSize = extractNumericValue(item.getValue());
-                break;  // Exit the loop once the serving size is found
+                break;
             }
         }
 
@@ -832,7 +881,6 @@ public class SelectImage extends AppCompatActivity implements
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -841,7 +889,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -850,7 +897,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("Heart Problem");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -859,7 +905,6 @@ public class SelectImage extends AppCompatActivity implements
                     double transFatRange = 0; // 0 Consume is safe
                     double transFatValue = value * servingSize;
                     if (transFatRange > transFatRange) {
-                        triggerCondition.add("Heart problem");
                         highIn.add("trans fat");
                         safeToConsume = false;
                     }
@@ -867,22 +912,20 @@ public class SelectImage extends AppCompatActivity implements
                 default:
                     break;
             }
-            if (triggerCondition.contains("Heart problem")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
+
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
-    private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList) {
+    private void analyzeForKidneyProblem(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("kidney problem");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;
@@ -900,7 +943,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("sodium");
                         safeToConsume = false;
                     }
@@ -909,7 +951,6 @@ public class SelectImage extends AppCompatActivity implements
                     double potassiumSafeRange = 2500; // mg
                     double potassiumValue = value * servingSize;
                     if (potassiumValue > potassiumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("potassium");
                         safeToConsume = false;
                     }
@@ -918,7 +959,6 @@ public class SelectImage extends AppCompatActivity implements
                     double phosphorousSafeRange = 800; // mg
                     double phosphorousValue = value * servingSize;
                     if (phosphorousValue > phosphorousValue) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("potassium");
                         safeToConsume = false;
                     }
@@ -931,7 +971,6 @@ public class SelectImage extends AppCompatActivity implements
                     double calciumSafeRange = 1000; //mg
                     double calciumValue = value * servingSize;
                     if (calciumValue > calciumSafeRange) {
-                        triggerCondition.add("kidney problem");
                         highIn.add("calcium");
                         safeToConsume = false;
                     }
@@ -940,11 +979,19 @@ public class SelectImage extends AppCompatActivity implements
                     break;
             }
         }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
+
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
     }
 
-    private void analyzeForObese(List<NutritionItem> nutritionItemList) {
+    private void analyzeForObese(List<NutritionItem> nutritionItemList, String foodName) {
         boolean safeToConsume = true;
         List<String> triggerCondition = new ArrayList<>();
+        triggerCondition.add("Obesity");
         List<String> highIn = new ArrayList<>();
         String triggerConditions = "";
         double servingSize = 0;  // Initialize to a default value or handle it based on your requirements
@@ -966,7 +1013,6 @@ public class SelectImage extends AppCompatActivity implements
                     double calorieSafeRange = 1000; // kcal
                     double calorieValue = value * servingSize;
                     if (calorieValue > calorieSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -978,7 +1024,6 @@ public class SelectImage extends AppCompatActivity implements
                     double satFatSafeRange = satFat / 9; // grams
                     double satFatsValue = value * servingSize;
                     if (satFatsValue > satFatSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("Saturated Fats");
                         safeToConsume = false;
                     }
@@ -988,7 +1033,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sugarSafeRange = 25; //25g
                     double sugarValue = value * servingSize;
                     if (sugarValue > sugarSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("added sugar");
                         safeToConsume = false;
                     }
@@ -997,7 +1041,6 @@ public class SelectImage extends AppCompatActivity implements
                     double sodiumSafeRange = 1500; //1500mg
                     double sodiumValue = value * servingSize;
                     if (sodiumValue > sodiumSafeRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("salt/sodium");
                         safeToConsume = false;
                     }
@@ -1006,7 +1049,6 @@ public class SelectImage extends AppCompatActivity implements
                     double transFatRange = 0; // 0 Consume is safe
                     double transFatValue = value * servingSize;
                     if (transFatRange > transFatRange) {
-                        triggerCondition.add("Obesity");
                         highIn.add("trans fat");
                         safeToConsume = false;
                     }
@@ -1014,22 +1056,168 @@ public class SelectImage extends AppCompatActivity implements
                 default:
                     break;
             }
-            if (triggerCondition.contains("Heart problem")) {
-                triggerConditions = triggerCondition.toString();
-            }
-            String allhighIn = TextUtils.join(", ", highIn);
-            updateRecyclerView(nutritionItemList, safeToConsume, triggerConditions, allhighIn);
-
-            Log.e("Trigger", "Trigger List: " + triggerConditions);
-            Log.e("Trigger", "high in List: " + allhighIn);
-            Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
-            Log.e("Trigger", "No. of servings: " + servingSize);
         }
-    }
+        String allhighIn = TextUtils.join(", ", highIn);
+        updateRecyclerView(nutritionItemList, safeToConsume, foodName, allhighIn);
 
+        Log.e("Trigger", "Trigger List: " + triggerCondition);
+        Log.e("Trigger", "high in List: " + allhighIn);
+        Log.e("Trigger", "Safe to Consume?: " + safeToConsume);
+        Log.e("Trigger", "No. of servings: " + servingSize);
+    }
     private double extractNumericValue(String input) {
         // Assuming the input is in the format "123mg" or "456g" etc.
         String numericValue = input.replaceAll("[^\\d.]+", "");
         return Double.parseDouble(numericValue);
+    }
+
+    private void showFeedback() {
+        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        View dialogView = layoutInflater.inflate(R.layout.inflater_feedback, null);
+        TextInputEditText feedback = dialogView.findViewById(R.id.etFeedback);
+        Button submit = dialogView.findViewById(R.id.submitBtn);
+        AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
+        alertDialog.setView(dialogView);
+        feedbackDialog = alertDialog.create();
+        Animation popAnim = AnimationUtils.loadAnimation(this, R.anim.pop_animation);
+        dialogView.setAnimation(popAnim);
+        submit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String feedbacks = feedback.getText().toString().trim();
+                if (feedbacks.isEmpty() || feedbacks == "") {
+                    feedback.setError("Missing Field*");
+                    feedback.requestFocus();
+                    imm.showSoftInput(feedback, InputMethodManager.SHOW_IMPLICIT);
+                } else {
+                    feedbackDialog.dismiss();
+                    sendFeedback(feedbacks);
+                }
+            }
+        });
+        feedbackDialog.show();
+    }
+
+    private void sendFeedback(String feedback) {
+        SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
+        int ID = getID.getInt("userId", 0);
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, FEEDBACK,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            Log.d("RawResponse", response); // Print the raw response
+
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Proceed with parsing as JSON
+                                try {
+                                    JSONObject jsonObject = new JSONObject(response);
+                                    String result = jsonObject.getString("status");
+
+                                    if (result.equals("success")) {
+                                        Toast.makeText(SelectImage.this, "Thank you for your feedback!", LENGTH_SHORT).show();
+                                        feedbackDialog.dismiss();
+                                    } else {
+                                        Toast.makeText(SelectImage.this, "Try Again.", LENGTH_SHORT).show();
+                                        feedbackDialog.show();
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e("Error", "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+                // Handle error response
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(ID));
+                params.put("Feedback", feedback);
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(SelectImage.this);
+        queue.add(stringRequest);
+    }
+
+    private void shareApplication(){
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        String message = "Hey, I found this cool app that can change the way you live by eating healthy products.!\n\nDownload link: https://nutrilense.ucc-bscs.com/";
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Check out this app!");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, message);
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
+    }
+    private void storeConsumeToDB(String foodname) {
+        Date currentDate = new Date();
+        SharedPreferences getID = getSharedPreferences("LogInSession", MODE_PRIVATE);
+        int userID = getID.getInt("userId", 0);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy hh:mm a", Locale.ENGLISH);
+        String formattedDate = dateFormat.format(currentDate);
+        Log.d("Date", "Formatted Date: " + formattedDate);
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, CONSUMED_GOODS,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            if (response.startsWith("<br")) {
+                                // Handle unexpected response, it might be an error message or HTML content.
+                                Log.e("Error", "Unexpected response format");
+                            } else {
+                                // Check if the response is "Success!"
+                                if ("Success!".equals(response.trim())) {
+                                    // Success! Do whatever you need to do here
+                                    productDialog.dismiss();
+                                    productDialog = null;
+                                } else {
+                                    // Handle the case where the server response is not "Success!"
+                                    Log.e("Error", "Server response: " + response);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e("Error", "Exception: " + e.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("VolleyError", "Error: " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("ID", String.valueOf(userID));
+                params.put("Food", foodname);
+                params.put("Date", formattedDate);
+                return params;
+            }
+        };
+
+        // Set the retry policy and add the request to the queue
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(1000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        RequestQueue queue = Volley.newRequestQueue(SelectImage.this);
+        queue.add(stringRequest);
     }
 }

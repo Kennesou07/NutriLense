@@ -6,8 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context=".MainActivity"
-    tools:openDrawer="start">
+    tools:context=".MainActivity">
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
@@ -31,25 +30,40 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:theme="?attr/actionBarTheme"
-            app:navigationIcon="@drawable/drawer_icon"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:navigationIcon="@drawable/drawer_icon">
+
+            <ImageView
+                android:layout_width="150px"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/logo" />
+
+            <ImageView
+                android:id="@+id/btnSettings"
+                android:layout_width="80px"
+                android:layout_height="80px"
+                android:layout_gravity="end"
+                android:layout_marginRight="20dp"
+                android:src="@drawable/settings_icon" />
+        </androidx.appcompat.widget.Toolbar>
 
         <RelativeLayout
             android:id="@+id/relativeLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="50dp"
             android:background="@android:color/white"
-            android:orientation="vertical"
-            android:layout_marginTop="50dp">
+            android:orientation="vertical">
 
             <FrameLayout
                 android:id="@+id/container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                />
+                android:layout_alignParentTop="true" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/detectedObjectsRecyclerView"
                 android:layout_width="match_parent"
@@ -59,7 +73,6 @@
                 android:background="@color/tfe_color_primary_dark"
                 android:visibility="visible" />
         </RelativeLayout>
-
 
 
         <include
